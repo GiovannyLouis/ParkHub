@@ -4,7 +4,8 @@ import SwiftUI
 
 struct LessonPageView: View {
     let lessons: [Lesson] = [
-        Lesson(lessonId: "s1", title: "Introduction to SwiftUI", desc: "Learn the fundamentals of building UIs with SwiftUI.", imageUrl: "swiftui_logo"),
+        Lesson(lessonId: "s1", title: "Masterclass to SwiftUI", desc: "Learn the fundamentals of building UIs with SwiftUI.", imageUrl: "swiftui_logo"),
+        Lesson(lessonId: "s1", title: "introduction to SwiftUI", desc: "Learn the fundamentals of building UIs with SwiftUI.", imageUrl: "swiftui_logo"),
         Lesson(lessonId: "s2", title: "State Management", desc: "Understand how state and data flow work in SwiftUI applications.", imageUrl: "state_icon"),
         Lesson(lessonId: "s3", title: "Navigation in SwiftUI", desc: "Explore different ways to navigate between views.", imageUrl: "navigation_icon"),
         Lesson(lessonId: "s4", title: "Working with Lists", desc: "Deep dive into creating dynamic lists and grids.", imageUrl: "list_icon")
