@@ -21,7 +21,7 @@ struct LessonPageView: View {
         VStack(spacing: 0) {
             VStack {
                 HStack {
-                    Text("Available Lessons")
+                    Text("Super Courses")
                         .foregroundColor(.white)
                         .font(.system(size: 24, weight: .semibold))
                     Spacer()
