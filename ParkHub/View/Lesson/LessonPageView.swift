@@ -22,6 +22,7 @@ struct LessonPageView: View {
             VStack {
                 HStack {
                     Text("Visible Materials")
+
                         .foregroundColor(.white)
                         .font(.system(size: 24, weight: .semibold))
                     Spacer()
