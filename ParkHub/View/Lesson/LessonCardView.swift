@@ -1,4 +1,3 @@
-
 //
 //  LessonCardView.swift
 //  ParkHub
@@ -19,7 +18,7 @@ extension Color {
         )
     }
 }
-
+let logoutRed = Color(hex: 0xFFD9534F)
 let primaryOrange = Color(hex: 0xffffa001)
 
 struct LessonCardView: View {
