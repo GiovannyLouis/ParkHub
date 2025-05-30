@@ -8,14 +8,17 @@
 import SwiftUI
 
 struct TopAppBar: View { // Renamed to avoid potential conflicts
-    var onNavigateToHome: () -> Void // Passed down to LogoSmallView
-
     var body: some View {
-        VStack { // Column
-            LogoSmallView(onNavigateToHome: onNavigateToHome)
+        HStack() { // Column
+            Spacer()
+            LogoSmall()
         }
         .frame(maxWidth: .infinity) // fillMaxWidth
-        .padding(EdgeInsets(top: 40, leading: 20, bottom: 20, trailing: 20))
-        .background() // background(color = Color(0xffffa001))
+        .padding()
+        .background(Color(red: 1.0, green: 0.627, blue: 0.004)) // background(color = Color(0xffffa001))
     }
+}
+
+#Preview {
+    TopAppBar()
 }
