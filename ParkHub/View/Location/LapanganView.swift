@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct LapanganView: View {
-    @StateObject private var viewModel = LapanganViewModel()
+    @EnvironmentObject var viewModel: LapanganViewModel
 
     var body: some View {
         VStack(spacing: 0) {
@@ -258,4 +258,5 @@ struct HorizLapanganView: View {
 
 #Preview {
     LapanganView()
+        .environmentObject(LapanganViewModel())
 }

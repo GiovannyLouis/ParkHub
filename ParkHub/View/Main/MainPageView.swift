@@ -8,6 +8,9 @@ struct MainPageView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @EnvironmentObject var reportVM: ReportViewModel // For submitting reports
 
+    @EnvironmentObject var bukitVM: BukitViewModel
+    @EnvironmentObject var lapanganVM: LapanganViewModel
+    @EnvironmentObject var gedungVM: GedungViewModel
     @State private var showAuthSheet = false
     @State private var isRegistering = false
 
@@ -56,6 +59,11 @@ struct MainPageView: View {
                     .tint(.blue) // Different color
                     // --- End of Button to reportListView ---
 
+                    
+                    NavigationLink(destination: LocationView()) {
+                        Text("Locations")
+                    }
+                    
                     Spacer()
 
                     Button("Log Out") {
@@ -190,4 +198,8 @@ struct AuthSheetContainerView: View {
     MainPageView()
         .environmentObject(AuthViewModel())
         .environmentObject(ReportViewModel()) // Add ReportViewModel for preview
+        .environmentObject(AuthViewModel()) // Provide a dummy AuthViewModel for preview
+        .environmentObject(BukitViewModel())
+        .environmentObject(LapanganViewModel())
+        .environmentObject(GedungViewModel())
 }
