@@ -1,22 +1,34 @@
+import Foundation
+import FirebaseDatabase
+import SwiftUI
 
-import SwiftUI // For Color
-
+@MainActor
 class BukitViewModel: ObservableObject {
     @Published var locations: [Location] = []
+    private var bukitref: DatabaseReference
     
     init() {
-        loadBukitLocations()
+        self.bukitref = Database.database().reference().child("locations/bukit")
+        fetchLocations()
     }
     
-    func loadBukitLocations() {
-        var tempLocations: [Location] = []
-        for i in 1...36 {
-            // For demonstration, let's make some filled and some not
-            // You can adjust this logic or fetch real data later
-            let isSpotFilled = (i % 5 == 0) || (i > 30) // Example: every 5th and last 6 are filled
-            tempLocations.append(Location(id: i, nama: "Bukit-\(i)", isFilled: isSpotFilled))
+    func fetchLocations() {
+        bukitref.observe(.value) { snapshot in
+            guard let value = snapshot.value as? [String: Any] else {
+                self.locations = []
+                return
+            }
+            
+            self.locations = value.compactMap { (key, bukitData) in
+                guard let bukitDict = bukitData as? [String: Any],
+                      let jsonData = try? JSONSerialization.data(withJSONObject: bukitDict),
+                      let location = try? JSONDecoder().decode(Location.self, from: jsonData) else {
+                    return nil
+                }
+                
+                return location
+            }.sorted(by: { $0.id < $1.id })
         }
-        self.locations = tempLocations
     }
     
     func getColor(for location: Location) -> Color {
@@ -32,27 +44,51 @@ class BukitViewModel: ObservableObject {
         guard locations.count >= 36 else { return [] }
         return Array(locations[18..<36])
     }
+    
+//    init() {
+//        loadBukitLocations()
+//    }
+//    
+//    func loadBukitLocations() {
+//        var tempLocations: [Location] = []
+//        for i in 1...36 {
+//            // For demonstration, let's make some filled and some not
+//            // You can adjust this logic or fetch real data later
+//            let isSpotFilled = (i % 5 == 0) || (i > 30) // Example: every 5th and last 6 are filled
+//            tempLocations.append(Location(id: i, nama: "Bukit-\(i)", isFilled: isSpotFilled))
+//        }
+//        self.locations = tempLocations
+//    }
 }
 
 class LapanganViewModel: ObservableObject {
     @Published var locations: [Location] = []
-    private let totalLapanganSpots = 281 // Max index 280, so 281 items (0-280)
-
+        
+    private var lapanganref: DatabaseReference
+    
     init() {
-        loadLapanganLocations()
+        self.lapanganref = Database.database().reference().child("locations/lapangan")
+        fetchLocations()
     }
-
-    func loadLapanganLocations() {
-        var tempLocations: [Location] = []
-        for i in 0..<totalLapanganSpots {
-            // Example: make some spots filled for demonstration
-            // Adjust this logic as needed
-            let isSpotFilled = (i % 10 == 0) || (i > 250 && i < 260)
-            tempLocations.append(Location(id: i, nama: "Lapangan-\(i)", isFilled: isSpotFilled))
+    
+    func fetchLocations() {
+        lapanganref.observe(.value) { snapshot in
+            guard let value = snapshot.value as? [String: Any] else {
+                self.locations = []
+                return
+            }
+            
+            self.locations = value.compactMap { (key, lapanganData) in
+                guard let lapanganDict = lapanganData as? [String: Any],
+                      let jsonData = try? JSONSerialization.data(withJSONObject: lapanganDict),
+                      let location = try? JSONDecoder().decode(Location.self, from: jsonData) else {
+                    return nil
+                }
+                return location
+            }.sorted(by: { $0.id < $1.id })
         }
-        self.locations = tempLocations
     }
-
+    
     func getColor(for location: Location) -> Color {
         return location.isFilled ? .red : .green
     }
@@ -119,43 +155,55 @@ class LapanganViewModel: ObservableObject {
         guard locations.count > 39 else { return [] }
         return Array(locations[0...39])
     }
+    
+//    private let totalLapanganSpots = 281 // Max index 280, so 281 items (0-280)
+//
+//    init() {
+//        loadLapanganLocations()
+//    }
+//
+//    func loadLapanganLocations() {
+//        var tempLocations: [Location] = []
+//        for i in 0..<totalLapanganSpots {
+//            // Example: make some spots filled for demonstration
+//            // Adjust this logic as needed
+//            let isSpotFilled = (i % 10 == 0) || (i > 250 && i < 260)
+//            tempLocations.append(Location(id: i, nama: "Lapangan-\(i)", isFilled: isSpotFilled))
+//        }
+//        self.locations = tempLocations
+//    }
 }
 
 class GedungViewModel: ObservableObject {
-    @Published var allGedungLocations: [Location] = []
-    @Published var currentFloor: Int = 4
-    @Published var isLoading: Bool = true
-    @Published var errorMessage: String? = nil
+    @Published var locations: [Location] = []
+    @Published var currentFloor: Int = 3
 
     private let minFloor = 3
     private let maxFloor = 14
+    
+    private var gedungref: DatabaseReference
 
     init() {
-        loadAllGedungLocations()
+        self.gedungref = Database.database().reference().child("locations/gedung")
+        fetchLocations()
     }
 
-    func loadAllGedungLocations() {
-        self.isLoading = true
-        self.errorMessage = nil
-        var tempLocations: [Location] = []
-
-        for floor in minFloor...maxFloor {
-            let isEvenFloor = (floor % 2 == 0)
-            let numberOfSpots = isEvenFloor ? 36 : 39
-
-            for spotNumber in 1...numberOfSpots {
-                let locationId = floor * 100 + spotNumber // Unique ID: floor * 100 + spot
-                let locationName = "Gedung-\(floor)-\(spotNumber)"
-                // Example: make some spots filled for demonstration
-                let isSpotFilled = (spotNumber % 7 == 0) || (floor == currentFloor && spotNumber > numberOfSpots - 5)
-
-                tempLocations.append(
-                    Location(id: locationId, nama: locationName, isFilled: isSpotFilled)
-                )
+    func fetchLocations() {
+        gedungref.observe(.value) { snapshot in
+            guard let value = snapshot.value as? [String: Any] else {
+                self.locations = []
+                return
             }
+
+            self.locations = value.compactMap { (key, gedungData) in
+                guard let gedungDict = gedungData as? [String: Any],
+                      let jsonData = try? JSONSerialization.data(withJSONObject: gedungDict),
+                      let location = try? JSONDecoder().decode(Location.self, from: jsonData) else {
+                    return nil
+                }
+                return location
+            }.sorted(by: { $0.id < $1.id })
         }
-        self.allGedungLocations = tempLocations
-        self.isLoading = false
     }
 
     func incrementFloor() {
@@ -175,7 +223,7 @@ class GedungViewModel: ObservableObject {
     }
 
     var filteredGedungsForCurrentFloor: [Location] {
-        allGedungLocations.filter { location in
+        locations.filter { location in
             let floorOfLocation = location.id / 100
             return floorOfLocation == currentFloor
         }
@@ -221,4 +269,29 @@ class GedungViewModel: ObservableObject {
         guard !isCurrentFloorEven, filteredGedungsForCurrentFloor.count == 39 else { return [] }
         return Array(filteredGedungsForCurrentFloor[21...38])
     }
+    
+//    init() {
+//        loadAllGedungLocations()
+//    }
+//
+//    func loadAllGedungLocations() {
+//        var tempLocations: [Location] = []
+//
+//        for floor in minFloor...maxFloor {
+//            let isEvenFloor = (floor % 2 == 0)
+//            let numberOfSpots = isEvenFloor ? 36 : 39
+//
+//            for spotNumber in 1...numberOfSpots {
+//                let locationId = floor * 100 + spotNumber // Unique ID: floor * 100 + spot
+//                let locationName = "Gedung-\(floor)-\(spotNumber)"
+//                // Example: make some spots filled for demonstration
+//                let isSpotFilled = (spotNumber % 7 == 0) || (floor == currentFloor && spotNumber > numberOfSpots - 5)
+//
+//                tempLocations.append(
+//                    Location(id: locationId, nama: locationName, isFilled: isSpotFilled)
+//                )
+//            }
+//        }
+//        self.locations = tempLocations
+//    }
 }

@@ -6,6 +6,9 @@ import SwiftUI
 
 struct MainPageView: View {
     @EnvironmentObject var authVM: AuthViewModel
+    @EnvironmentObject var bukitVM: BukitViewModel
+    @EnvironmentObject var lapanganVM: LapanganViewModel
+    @EnvironmentObject var gedungVM: GedungViewModel
     @State private var showAuthSheet = false
     @State private var isRegistering = false // To control if the sheet shows Login or Register
 
@@ -24,6 +27,10 @@ struct MainPageView: View {
                         Text("Hello, \(user.displayName ?? user.email ?? "User")!")
                             .font(.title2)
                             .padding(.bottom)
+                    }
+                    
+                    NavigationLink(destination: LocationView()) {
+                        Text("Locations")
                     }
                     
                     Spacer()
@@ -159,4 +166,7 @@ struct AuthSheetContainerView: View {
 #Preview {
     MainPageView()
         .environmentObject(AuthViewModel()) // Provide a dummy AuthViewModel for preview
+        .environmentObject(BukitViewModel())
+        .environmentObject(LapanganViewModel())
+        .environmentObject(GedungViewModel())
 }

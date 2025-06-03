@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct GedungView: View {
-    @StateObject private var viewModel = GedungViewModel()
+    @EnvironmentObject var viewModel: GedungViewModel
 
     var body: some View {
         VStack(spacing: 0) {
@@ -17,12 +17,8 @@ struct GedungView: View {
             ZStack { // Main Content Box
                 Color.white // Background
 
-                if viewModel.isLoading {
+                if viewModel.locations.isEmpty {
                     ProgressView()
-                } else if let errorMessage = viewModel.errorMessage {
-                    Text("Error: \(errorMessage)")
-                        .foregroundColor(.red)
-                        .padding()
                 } else {
                     // Floor Display and Navigation Row
                     // Original Row had .fillMaxSize().padding(16.dp), horizontalArrangement = Center, verticalAlignment = CenterVertically
@@ -54,7 +50,7 @@ struct GedungView: View {
                                 .frame(width: 64, height: 40)
                                 .background(Color.gray.opacity(0.5))
                             } else { // Odd Floor Left
-                                VStack(alignment: .leading, spacing: 0) { // Explicit VStack for alignment
+                                VStack(alignment: .trailing, spacing: 0) { // Explicit VStack for alignment
                                     ForEach(viewModel.oddFloorLeftSectionSpots) { location in
                                         HorizGedungView(color: viewModel.getGedungColor(isFilled: location.isFilled))
                                     }
@@ -172,4 +168,5 @@ struct HorizGedungView: View {
 
 #Preview {
     GedungView()
+        .environmentObject(GedungViewModel())
 }
