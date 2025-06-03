@@ -1,153 +1,169 @@
+// submitReportView.swift
 import SwiftUI
 
 struct submitReportView: View {
-    // State variables for the form inputs
-    @State private var reportTitleInput: String = ""
-    @State private var reportDescriptionInput: String = ""
-    @State private var selectedImage: UIImage?
-    @State private var showImagePicker = false
+    // ViewModel and Auth Environment Objects
+    @EnvironmentObject var reportVM: ReportViewModel
+    @EnvironmentObject var authVM: AuthViewModel
 
-
-    // Environment variable to dismiss the view (for the back button)
+    // Environment variable to dismiss the view
     @Environment(\.dismiss) var dismiss
 
-    // Properties passed to the view (as in your Kotlin composable)
-    var token: String
-    var id: Int
-    // 'context' is not directly used in SwiftUI in the same way as Android.
-    // For Toast-like messages, you'd use Alerts or custom overlays.
-     var body: some View {
-        VStack {
-            TopAppBar()
-            VStack { // Main vertical stack for all content
-                Spacer()
-        
-                // ScrollView for the form content in case it overflows
-                VStack(alignment: .leading, spacing: 8) { // Content of the white rounded box
-                    // Back Arrow
-                    Image(systemName: "arrow.backward") // SF Symbol for back arrow
-                        // If you have "baseline_arrow_back_24" in assets: Image("baseline_arrow_back_24")
-                        .font(.title2) // Adjust size as needed
-                        .foregroundColor(.black) // Or a specific color
-                        .onTapGesture {
-                            // Navigate back to the HomePage (equivalent)
-                            print("Back arrow tapped - dismissing view")
-                            dismiss()
+    // Removed token and id as they are handled by ViewModels and Firebase Auth
+    // var token: String
+    // var id: Int
+
+    // Removed @State variables for inputs as they are now in reportVM
+    // @State private var reportTitleInput: String = ""
+    // @State private var reportDescriptionInput: String = ""
+    // @State private var selectedImage: UIImage? // Image functionality removed
+    // @State private var showImagePicker = false // Image functionality removed
+
+    // Assuming TopAppBar and BotAppBar are defined elsewhere
+    // If not, you'll need to provide their definitions or comment them out.
+    // For this example, I'll assume they exist.
+
+    var body: some View {
+        VStack(spacing: 0) { // Ensure no spacing between TopAppBar, content, BotAppBar
+            TopAppBar() // Your custom TopAppBar
+
+            // Main content area that scrolls
+            ScrollView { // Make the central form content scrollable
+                VStack { // Main vertical stack for content between Top and Bot AppBars
+                    Spacer() // Pushes form content down a bit if ScrollView is not full
+            
+                    // Form container VStack (white rounded box)
+                    VStack(alignment: .leading, spacing: 12) { // Adjusted spacing
+                        // Back Arrow
+                        Image(systemName: "arrow.backward")
+                            .font(.title2)
+                            .foregroundColor(.black) // Or your theme color
+                            .padding(.bottom, 8) // Add some space below the arrow
+                            .onTapGesture {
+                                dismiss()
+                            }
+
+                        // "Report an Issue" Title
+                        Text("Report an Issue")
+                            .font(.system(size: 24, weight: .bold))
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.bottom, 10) // Add space below title
+
+                        // Title field
+                        Text("Title:")
+                            .font(.system(size: 16, weight: .semibold))
+                        TextField("Enter title", text: $reportVM.reportTitle) // Bind to ViewModel
+                            .padding(10)
+                            .background(Color(white: 0.784)) // Your containerColor
+                            .cornerRadius(5)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 5)
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+
+
+                        // Description field
+                        Text("Description:")
+                            .font(.system(size: 16, weight: .semibold))
+                        TextEditor(text: $reportVM.reportDescription) // Bind to ViewModel
+                            .frame(minHeight: 80, idealHeight: 100, maxHeight: 150) // Adjusted height
+                            .padding(EdgeInsets(top: 8, leading: 5, bottom: 8, trailing: 5)) // More typical padding for TextEditor
+                            .background(Color(white: 0.784)) // Your containerColor
+                            .cornerRadius(5)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 5)
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                        
+                        // Image Upload Field - REMOVED as per "no image" requirement
+                        // Text("Upload Image:") ...
+                        // Button(...) { ... }
+
+                        // Submit Button
+                        Button(action: {
+                            guard let user = authVM.firebaseAuthUser else {
+                                reportVM.errorMessage = "You must be logged in to submit a report."
+                                return
+                            }
+                            // Basic client-side validation
+                            guard !reportVM.reportTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                                  !reportVM.reportDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                                reportVM.errorMessage = "Title and description cannot be empty."
+                                return
+                            }
+                            Task {
+                                let success = await reportVM.createReport(
+                                    currentUserId: user.uid,
+                                    currentUsername: user.displayName ?? "Anonymous"
+                                )
+                                if success {
+                                    dismiss()
+                                }
+                            }
+                        }) {
+                            Text(reportVM.isLoading ? "Submitting..." : "Submit Report")
+                                .foregroundColor(.white)
+                                .fontWeight(.semibold)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(reportVM.isLoading ? Color.gray : Color(red: 1.0, green: 0.627, blue: 0.004)) // Your orange button color
+                                .cornerRadius(8)
                         }
+                        .disabled(reportVM.isLoading)
+                        .padding(.top, 10) // Add space above the button
 
-                    // "Report an Issue" Title
-                    Text("Report an Issue")
-                        .font(.system(size: 24, weight: .bold))
-                        .frame(maxWidth: .infinity, alignment: .center) // To center it
-
-                    // Title field
-                    Text("Title:")
-                        .font(.system(size: 16, weight: .semibold))
-                    TextField("Enter title", text: $reportTitleInput)
-                        .padding(10) // Inner padding for text field text
-                        .background(Color(white: 0.784)) // containerColor
-                        .cornerRadius(5) // Standard corner radius for text fields
-                        // .textFieldStyle(PlainTextFieldStyle()) // Can be used for more control
-
-                    // Description field
-                    Text("Description:")
-                        .font(.system(size: 16, weight: .semibold))
-                    // Use TextEditor for multi-line input
-                    TextEditor(text: $reportDescriptionInput)
-                        .frame(minHeight: 40, idealHeight: 50, maxHeight: 100) // Adjust height
-                        .padding(2) // Inner padding for TextEditor
-                        .background(Color(white: 0.784)) // containerColor
-                        .cornerRadius(5)
-                        .overlay( // Optional: add a border like many text editors
-                            RoundedRectangle(cornerRadius: 5)
-                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                        )
-                    // Image Upload Field
-                      Text("Upload Image:")
-                          .font(.system(size: 16, weight: .semibold))
-                      
-                      Button(action: {
-                          showImagePicker = true
-                      }) {
-                          if let selectedImage = selectedImage {
-                              Image(uiImage: selectedImage)
-                                  .resizable()
-                                  .scaledToFit()
-                                  .frame(height: 100)
-                                  .cornerRadius(5)
-                          } else {
-                              ZStack() {
-                                  Color(white: 0.784)
-                                      .frame(height: 100)
-                                      .cornerRadius(5)
-                                  VStack {
-                                      Image(systemName: "photo.on.rectangle")
-                                          .font(.system(size: 32))
-                                          .foregroundColor(.gray)
-                                      Text("Tap to select an image")
-                                          .foregroundColor(.gray)
-                                      
-                                  }
-                                
-                              }
-                              .padding(.bottom)
-                          }
-                          
-                      }
-                    
-
-                    // Log.d("id", "id:${id}") - Can be printed on appear or button tap
-                    // For example, print it when the button is tapped:
-
-                    // Submit Button
-                    Button(action: {
-                        print("Submit Report Button Tapped")
-                        print("ID: \(id)")
-                        print("Token: \(token)")
-                        print("Title: \(reportTitleInput)")
-                        print("Description: \(reportDescriptionInput)")
-                        // Here you would typically call a ViewModel function
-                        // For now, we just print.
-                        // reportViewModel.createReport(token, id, navController)
-                    }) {
-                        Text("Submit Report")
-                            .foregroundColor(.white)
-                            .fontWeight(.semibold) // Or .medium
-                            .frame(maxWidth: .infinity) // To make button full width
-                            .padding() // Padding inside the button
-                            .background(Color(red: 1.0, green: 0.627, blue: 0.004)) // Orange button color
-                            .cornerRadius(8)
+                        // Display error message from ViewModel
+                        if let errorMsg = reportVM.errorMessage, !errorMsg.isEmpty {
+                            Text(errorMsg)
+                                .font(.callout)
+                                .foregroundColor(.red)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding(.top, 5)
+                        }
                     }
+                    .padding() // Inner padding for the white rounded box content
+                    .background(.white)
+                    .cornerRadius(16)
+                    .padding(.horizontal, 30) // Adjusted horizontal padding for the white box
+                    .padding(.vertical, 20)   // Adjusted vertical padding for the white box
+                    
+                    Spacer() // Pushes form content up if ScrollView is not full
                 }
-                .padding()
-                .background(.white) // Background of the form container
-                .cornerRadius(16)        // R ounded corners for the form container
-                .padding(.horizontal, 40)
-                .padding(.vertical, 32)
-                
-                Spacer() // Pushes BotAppBar to the bottom
+                .frame(maxWidth: .infinity, maxHeight: .infinity) // Allow VStack to expand
             }
-            BotAppBar()
-        }
-        .background(
-            Image("backgroundparking") // Ensure "backgroundparking" is in your Assets.xcassets
-                .resizable()
-                .overlay(Color.black.opacity(0.5))
-                .scaledToFill() // Equivalent to ContentScale.Crop
+            .background( // Background for the ScrollView area (behind the white card)
+                Image("backgroundparking")
+                    .resizable()
+                    .overlay(Color.black.opacity(0.5))
+                    .scaledToFill()
+                    .ignoresSafeArea(.container, edges: .all) // Let background extend
             )
-        .navigationBarHidden(true) // Hides the default navigation bar if this view is in a NavigationStack
-        // .navigationBarBackButtonHidden(true) // If you want to rely solely on your custom back button
+            .clipped() // Clip the ScrollView's content if background is applied here
+
+            BotAppBar() // Your custom BotAppBar
+        }
+        // .background(...) // Background was moved to the ScrollView's content area
+        .navigationBarHidden(true)
         .onAppear {
-            print("submitReportView appeared. ID: \(id), Token: \(token)")
+            reportVM.clearInputFields() // Clear fields and errors when view appears
+            // print("submitReportView appeared.") // Removed id and token
         }
     }
 }
 
 // --- Preview ---
 #Preview {
-    // Wrap in NavigationStack for the @Environment(\.dismiss) to work in preview
-    // and to mimic typical app structure.
-    NavigationStack {
-        submitReportView(token: "PREVIEW_TOKEN", id: 123)
+    // Ensure TopAppBar and BotAppBar are defined or provide dummies for preview
+    // struct TopAppBar: View { var body: some View { Text("Top App Bar").padding().background(Color.blue.opacity(0.3)) } }
+    // struct BotAppBar: View { var body: some View { Text("Bot App Bar").padding().background(Color.green.opacity(0.3)) } }
+
+    return NavigationStack {
+        submitReportView()
+            // Remove token and id from preview as they are no longer properties
+            // submitReportView(token: "PREVIEW_TOKEN", id: 123)
+            .environmentObject(AuthViewModel())
+            .environmentObject(ReportViewModel())
     }
 }
+
+
