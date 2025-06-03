@@ -12,6 +12,7 @@ import FirebaseAppCheck
 @main
 struct ParkHubApp: App {
     @StateObject var authVM = AuthViewModel()
+    @StateObject var reportViewModel = ReportViewModel()
     
     init(){
         FirebaseApp.configure()
@@ -26,6 +27,7 @@ struct ParkHubApp: App {
         WindowGroup {
             MainPageView()
                 .environmentObject(authVM)
+                .environmentObject(reportViewModel)
         }
     }
 }

@@ -6,17 +6,19 @@ import SwiftUI
 
 struct MainPageView: View {
     @EnvironmentObject var authVM: AuthViewModel
+    @EnvironmentObject var reportVM: ReportViewModel // For submitting reports
+
     @State private var showAuthSheet = false
-    @State private var isRegistering = false // To control if the sheet shows Login or Register
+    @State private var isRegistering = false
+
+    @State private var showingSubmitReportSheet = false
 
     var body: some View {
-        // Using NavigationView here allows for a title bar and potentially other navigation
-        // if MainPageView becomes more complex later.
-        NavigationView {
+        NavigationView { // Your existing NavigationView
             VStack {
                 if authVM.isSignedIn {
                     // Content to show when the user IS signed in
-                    Text("Welcome to the Main Page!")
+                    Text("Welcome to ParkHub!")
                         .font(.largeTitle)
                         .padding()
 
@@ -25,86 +27,118 @@ struct MainPageView: View {
                             .font(.title2)
                             .padding(.bottom)
                     }
-                    
+
+                    // Button to create a new report (presents a sheet)
+                    Button {
+                        reportVM.clearInputFields()
+                        showingSubmitReportSheet = true
+                    } label: {
+                        Label("Create New Report", systemImage: "plus.circle.fill")
+                            .font(.headline)
+                    }
+                    .padding()
+                    .buttonStyle(.borderedProminent)
+                    .tint(.orange)
+
+                    // --- Button to navigate to reportListView ---
+                    NavigationLink {
+                        // Destination View: reportListView
+                        // EnvironmentObjects (authVM, reportVM) will be inherited
+                        reportListView()
+                            .navigationTitle("All Reports") // Give reportListView a title
+                            .navigationBarTitleDisplayMode(.inline)
+                    } label: {
+                        Label("View All Reports", systemImage: "list.bullet.rectangle.fill")
+                            .font(.headline)
+                    }
+                    .padding()
+                    .buttonStyle(.bordered) // Different style for this navigation button
+                    .tint(.blue) // Different color
+                    // --- End of Button to reportListView ---
+
                     Spacer()
 
                     Button("Log Out") {
                         authVM.signOut()
-                        // Input fields are typically cleared by AuthViewModel or when sheet appears
                     }
                     .padding()
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.bordered)
                     .tint(.red)
+
                 } else {
                     // Content to show when the user IS NOT signed in
-                    // This part might be brief if the sheet appears immediately.
                     Spacer()
                     LogoBig() // Assuming LogoBig is defined and accessible
                         .padding(.bottom, 30)
-                    Text("Please log in or register.")
+                    Text("Please log in or register to continue.")
                         .font(.headline)
+                        .multilineTextAlignment(.center)
                         .padding()
                     Spacer()
                 }
             }
-            .navigationTitle("ParkHub Main") // Example title
+            .navigationTitle("ParkHub") // Title for MainPageView
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
-                // When MainPageView appears, check if the user is signed in.
-                // If not, immediately prepare to present the authentication sheet.
                 if !authVM.isSignedIn {
-                    isRegistering = false // Default to login when sheet appears
-                    // Delay slightly to allow the view to appear before presenting sheet
-                    // This can sometimes help with smoother UI transitions.
+                    isRegistering = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         showAuthSheet = true
                     }
                 }
             }
             .sheet(isPresented: $showAuthSheet, onDismiss: {
-                // This block is called when the sheet is dismissed by any means
-                // (swipe, programmatic dismiss, etc.)
-                // If the user dismissed the sheet without logging in,
-                // and they are still not signed in, we might want to re-trigger the sheet
-                // or ensure the UI reflects the "not logged in" state.
                 if !authVM.isSignedIn {
                     print("Auth sheet dismissed, user still not signed in.")
-                    // If login is mandatory, you might want to re-show the sheet:
-                    // DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { // Add delay
-                    //    showAuthSheet = true
-                    // }
                 }
             }) {
-                // Content of the sheet: The AuthSheetContainerView
                 AuthSheetContainerView(isRegisteringInitially: $isRegistering)
-                    .environmentObject(authVM)
             }
-            // This ensures that if the auth state changes (e.g., user signs out elsewhere,
-            // or token expires and listener updates), the sheet presentation is re-evaluated.
+            .sheet(isPresented: $showingSubmitReportSheet) {
+                NavigationView { // Sheet content often has its own NavigationView
+                    submitReportView()
+                }
+            }
             .onChange(of: authVM.isSignedIn) { newIsSignedInStatus in
-                if !newIsSignedInStatus && !showAuthSheet {
-                    // If user becomes signed out while on this page, and sheet isn't already up,
-                    // show the auth sheet.
-                    isRegistering = false
-                    // Add a slight delay if needed for UI updates
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        showAuthSheet = true
+                if newIsSignedInStatus {
+                    if showAuthSheet {
+                        showAuthSheet = false
                     }
-                } else if newIsSignedInStatus && showAuthSheet {
-                    // If user becomes signed in (e.g. auto-login, deep link)
-                    // and the sheet is somehow still up, ensure it's dismissed.
-                    // (AuthSheetContainerView should also handle this, but this is a fallback)
-                    showAuthSheet = false
+                } else {
+                    if !showAuthSheet {
+                        isRegistering = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            showAuthSheet = true
+                        }
+                    }
                 }
             }
         }
     }
 }
 
-// AuthSheetContainerView (ensure this is in your project and accessible)
+// AuthSheetContainerView (defined in the same file or accessible)
+// ... (your AuthSheetContainerView code) ...
+// struct AuthSheetContainerView: View { ... }
+
+// Make sure LogoBig, LoginView, RegisterView, submitReportView, reportListView
+// are defined and accessible from their respective files.
+
+#Preview {
+    // Ensure all necessary dummy views or actual views are available for preview
+    // For example, if reportListView uses TopAppBar/BotAppBar, they need to be available.
+    // struct reportListView: View { var body: some View { Text("Report List Preview") } } // Dummy for this preview
+    // struct submitReportView: View { var body: some View { Text("Submit Report Preview") } } // Dummy
+    // struct LogoBig: View { var body: some View { Image(systemName: "p.circle.fill").font(.largeTitle) } } // Dummy
+    // struct AuthSheetContainerView: View { ... } // Needs LoginView & RegisterView dummies if not defined
+
+    MainPageView()
+        .environmentObject(AuthViewModel())
+        .environmentObject(ReportViewModel()) // Make sure ReportViewModel is provided
+}
+// AuthSheetContainerView is defined here, within the same file.
 // This view manages showing LoginView or RegisterView within the sheet
 // and handles dismissing the sheet on successful authentication.
-// (This is the same as provided in previous answers)
 struct AuthSheetContainerView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @Binding var isRegisteringInitially: Bool
@@ -118,45 +152,42 @@ struct AuthSheetContainerView: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationView { // Or NavigationStack for iOS 16+
             Group {
                 if currentIsRegistering {
+                    // Assuming RegisterView is defined in its own file and accessible
                     RegisterView(showRegisterSheet: $currentIsRegistering)
                 } else {
+                    // Assuming LoginView is defined in its own file and accessible
                     LoginView(showRegisterSheet: $currentIsRegistering)
                 }
             }
             .navigationTitle(currentIsRegistering ? "Create Account" : "Sign In")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismissSheet()
+                    }
+                }
+            }
         }
         .onAppear {
             currentIsRegistering = isRegisteringInitially
-            authVM.clearInputFields() // Clear fields for a fresh form
-            authVM.clearAuthError()   // Clear any previous errors
+            authVM.clearInputFields()
+            authVM.clearAuthError()
         }
         .onChange(of: authVM.isSignedIn) { newIsSignedInState in
             if newIsSignedInState {
-                dismissSheet() // Dismiss the sheet upon successful sign-in/sign-up
+                dismissSheet()
             }
         }
-        .interactiveDismissDisabled(authVM.isLoading) // Prevent swipe-dismiss during auth operation
+        .interactiveDismissDisabled(authVM.isLoading)
     }
 }
 
-// Dummy LogoBig for preview and compilation if not defined elsewhere
-// struct LogoBig: View {
-//     var body: some View {
-//         Image(systemName: "p.square.fill") // Placeholder
-//             .resizable()
-//             .scaledToFit()
-//             .frame(width: 100, height: 100)
-//             .foregroundColor(Color(red: 1.0, green: 0.89, blue: 0.78))
-//             .padding()
-//             .background(Circle().fill(Color.white.opacity(0.3)))
-//     }
-// }
-
 #Preview {
     MainPageView()
-        .environmentObject(AuthViewModel()) // Provide a dummy AuthViewModel for preview
+        .environmentObject(AuthViewModel())
+        .environmentObject(ReportViewModel()) // Add ReportViewModel for preview
 }
