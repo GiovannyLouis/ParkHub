@@ -1,9 +1,8 @@
-
 import Foundation
 
-struct User: Codable, Identifiable {
-    var id: String = ""
+struct User {
+    var uid: String = ""      
     var username: String = ""
-    var token: String?
+    var email: String = ""
+    var password: String = ""
 }
-
