@@ -5,6 +5,5 @@ struct Lesson: Identifiable, Hashable, Codable {
     var title: String
     var desc: String
     var content: String
-    var imageUrl: String?
     var userId: String?
 }

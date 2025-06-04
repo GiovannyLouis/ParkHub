@@ -1,74 +1,112 @@
-//
-//  BotAppBar.swift
-//  ParkHub
-//
-//  Created by student on 30/05/25.
-//
+// BotAppBar.swift
+// ParkHub
+// Created by student on 30/05/25.
 
 import SwiftUI
 
 struct BotAppBar: View {
-    var body: some View {
-        HStack(alignment: .center) { // Row, verticalAlignment = CenterVertically
-            // For Arrangement.SpaceAround, we use Spacers
-            Spacer()
+// To make these links work, the view that USES BotAppBar
+// needs to be inside a NavigationView or NavigationStack.
 
-            Button(action: {}) {
-                VStack(spacing: 4) { // Add some spacing between icon and text
-                    Image(systemName: "exclamationmark.triangle.fill") // Assumes image is in Assets.xcassets
-                        .resizable()
-                        .renderingMode(.template) // Allows tinting with foregroundColor
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 32, height: 32)
-                    Text("Report")
-                        .font(.system(size: 14))
-                }
-                .foregroundColor(.white) // Apply tint to both Image and Text
+var body: some View {
+    HStack(alignment: .center) {
+        Spacer()
+
+        // Report Button - Navigates to submitReportView
+        NavigationLink(destination: submitReportView()) { // submitReportView is the destination
+            VStack(spacing: 4) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .resizable()
+                    .renderingMode(.template)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 32, height: 32)
+                Text("Report")
+                    .font(.system(size: 14))
             }
-            .buttonStyle(PlainButtonStyle()) // Removes default button styling
-
-            Spacer()
-
-            Button(action: {}) {
-                VStack(spacing: 4) { // Add some spacing between icon and text
-                    Image(systemName: "car.fill") // Assumes image is in Assets.xcassets
-                        .resizable()
-                        .renderingMode(.template) // Allows tinting with foregroundColor
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 32, height: 32)
-                    Text("Location")
-                        .font(.system(size: 14))
-                }
-                .foregroundColor(.white) // Apply tint to both Image and Text
-            }
-            .buttonStyle(PlainButtonStyle())
-
-            Spacer()
-
-            Button(action: {}) {
-                VStack(spacing: 4) { // Add some spacing between icon and text
-                    Image(systemName: "book.fill") // Assumes image is in Assets.xcassets
-                        .resizable()
-                        .renderingMode(.template) // Allows tinting with foregroundColor
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 32, height: 32)
-                    Text("Lesson")
-                        .font(.system(size: 14))
-                }
-                .foregroundColor(.white) // Apply tint to both Image and Text
-            }
-            .buttonStyle(PlainButtonStyle())
-
-            Spacer()
+            .foregroundColor(.white)
         }
-        .frame(maxWidth: .infinity) // fillMaxWidth
-        .padding(.vertical, 12)
-        .background(Color(red: 1.0, green: 0.627, blue: 0.004)) // background(color = Color(0xffffa001))
-        .ignoresSafeArea()
+        .buttonStyle(PlainButtonStyle())
+
+        Spacer()
+
+        // Location Button - Navigates to LocationView
+        NavigationLink(destination: LocationView()) { // LocationView is already defined
+            VStack(spacing: 4) {
+                Image(systemName: "car.fill")
+                    .resizable()
+                    .renderingMode(.template)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 32, height: 32)
+                Text("Location")
+                    .font(.system(size: 14))
+            }
+            .foregroundColor(.white)
+        }
+        .buttonStyle(PlainButtonStyle())
+
+        Spacer()
+
+        // Lesson Button - Navigates to UserLessonSectionView (which uses LessonPageView)
+        NavigationLink(destination: UserLessonSectionView()) { // UserLessonSectionView uses LessonPageView
+            VStack(spacing: 4) {
+                Image(systemName: "book.fill")
+                    .resizable()
+                    .renderingMode(.template)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 32, height: 32)
+                Text("Lesson")
+                    .font(.system(size: 14))
+            }
+            .foregroundColor(.white)
+        }
+        .buttonStyle(PlainButtonStyle())
+
+        Spacer()
     }
+    .frame(maxWidth: .infinity)
+    .padding(.vertical, 12)
+    .background(Color(red: 1.0, green: 0.627, blue: 0.004)) // primaryOrange
+    // Consider implications of .ignoresSafeArea() as previously discussed
+}
 }
 
+// --- Destination View for "Lesson" Button (if not already defined) ---
+// This wrapper ensures LessonPageView gets the AuthViewModel
+struct UserLessonSectionView: View {
+@EnvironmentObject var authVM: AuthViewModel
+var body: some View {
+LessonPageView() // Ensure LessonPageView is defined
+// .navigationTitle("Lessons") // LessonPageView might set its own title or have TopAppBar
+// .navigationBarHidden(true) // If LessonPageView has its own complete nav bar (TopAppBar)
+}
+}
+
+// --- Preview for BotAppBar ---
 #Preview {
-    BotAppBar()
+// To make NavigationLinks in BotAppBar work in its own preview,
+// BotAppBar needs to be embedded in a NavigationView or NavigationStack.
+NavigationView {
+VStack {
+Spacer() // Content placeholder
+Text("Some Page Content")
+.padding()
+Spacer()
+BotAppBar()
+}
+// Provide dummy environment objects if needed by linked views
+// For submitReportView:
+.environmentObject(AuthViewModel())
+.environmentObject(ReportViewModel())
+// For UserLessonSectionView (which uses LessonPageView):
+// AuthViewModel is already provided above.
+// If LessonPageView uses LessonViewModel, add it:
+// .environmentObject(LessonViewModel())
+}
 }
 
+// Make sure the following views are defined and accessible:
+// - submitReportView.swift (as you provided)
+// - LocationView.swift
+// - LessonPageView.swift
+// - TopAppBar.swift (used by submitReportView)
+// And the necessary ViewModels for them.

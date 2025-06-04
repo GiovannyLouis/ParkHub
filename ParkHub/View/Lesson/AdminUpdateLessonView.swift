@@ -1,73 +1,68 @@
-//
-//  is.swift
-//  ParkHub
-//
-//  Created by Axel Valerio Ertamto on 03/06/25.
-//
-
+// File: AdminUpdateLessonView.swift
 
 import SwiftUI
 import Firebase
 import FirebaseAuth
+// For Auth.auth().currentUser?.uid
+// No need for FirebaseAuth directly if only using Auth.auth()
 
-// Assuming primaryOrange is defined
-// Assuming Lesson struct is defined
-/*
-struct Lesson: Identifiable, Hashable, Codable {
-    var id: String = UUID().uuidString
-    var title: String
-    var desc: String
-    var content: String
-    var imageUrl: String?
-    var userId: String?
-}
-*/
+// Assuming primaryOrange, logoutRed, Lesson, TopAppBar, BotAppBar are defined
+// Assuming AdminUpdateLessonViewModel is defined and compatible
 
 struct AdminUpdateLessonView: View {
+    @EnvironmentObject var authVM: AuthViewModel // For TopAppBar
     @EnvironmentObject var viewModel: AdminUpdateLessonViewModel
-    @Environment(\.dismiss) var dismiss
+    @Environment(\.dismiss) var dismiss // To dismiss the current view
 
     @State private var title: String = ""
     @State private var descriptionText: String = ""
     @State private var contentText: String = ""
-    @State private var originalImageUrl: String? = nil
-    @State private var originalUserId: String? = nil
+    @State private var originalUserId: String? = nil // For preserving original author if needed
 
     @State private var isFetchingDetails: Bool = false
 
-    // Removed token from here
     let lessonId: String
-    var onLessonUpdated: () -> Void
-    var onShowError: (String) -> Void
+    var onLessonUpdated: () -> Void // Callback on successful update
+    var onShowError: (String) -> Void // Callback to show an error message
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Top Bar
-            VStack {
-                HStack {
-                    Text("Update Lesson")
-                        .foregroundColor(.white)
-                        .font(.system(size: 24, weight: .semibold))
-                    Spacer()
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
-                .padding(.top, (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.windows.first?.safeAreaInsets.top ?? 0 + 20)
-            }
-            .frame(maxWidth: .infinity)
-            .background(primaryOrange)
-            .edgesIgnoringSafeArea(.top)
+        VStack(spacing: 0) { // Main VStack with no spacing for app bars
+            TopAppBar() // Generic TopAppBar
 
+            // Content Area
             ScrollView {
                 if isFetchingDetails {
                     ProgressView("Loading lesson details...")
-                        .padding()
+                        .progressViewStyle(CircularProgressViewStyle(tint: primaryOrange)) // Ensure primaryOrange is defined
+                        .padding(.top, 50)
                 } else {
+                    // Form content
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("Lesson ID: \(lessonId)")
-                            .font(.system(size: 16))
-                            .foregroundColor(.gray)
+
+                        // --- Custom Back Button ---
+                        Button(action: {
+                            dismiss() // Action to go back
+                        }) {
+                            HStack(spacing: 4) { // Adjust spacing as needed
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 17, weight: .semibold)) // Style similar to navigation bar back button
+                                Text("Back")
+                                    .font(.system(size: 17))
+                            }
+                        }
+                        .foregroundColor(primaryOrange) // Use your app's accent color, ensure primaryOrange is defined
+                        .padding(.bottom, 10) // Add some space below the back button before the title
+
+                        // "Update Lesson" Title
+                        Text("Update Lesson")
+                            .font(.system(size: 24, weight: .bold))
                             .padding(.bottom, 5)
+                            .frame(maxWidth: .infinity, alignment: .center) // Center the title
+
+                        Text("Lesson ID: \(lessonId)")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                            .padding(.bottom, 10)
 
                         Group {
                             Text("Title:")
@@ -104,7 +99,7 @@ struct AdminUpdateLessonView: View {
                             if viewModel.isLoading {
                                 ProgressView()
                                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                    .frame(height: 24)
+                                    .frame(height: 24) // Consistent height for ProgressView
                             } else {
                                 Text("Update")
                                     .font(.system(size: 20, weight: .bold))
@@ -113,22 +108,23 @@ struct AdminUpdateLessonView: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 56)
-                        .background(primaryOrange)
+                        .background(primaryOrange) // Ensure primaryOrange is defined
                         .cornerRadius(8)
                         .disabled(viewModel.isLoading || title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || descriptionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || contentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
-                    .padding()
+                    .padding() // Padding for all form content inside ScrollView
                 }
             }
-            .background(Color(UIColor.systemGroupedBackground))
+            .background(Color(UIColor.systemGroupedBackground)) // Background for the scrollable area
+
+            BotAppBar() // Generic BotAppBar
         }
         .onAppear(perform: loadLessonDetails)
-        .navigationBarHidden(true)
+        .navigationBarHidden(true) // TopAppBar replaces the system navigation bar
     }
 
     private func loadLessonDetails() {
         isFetchingDetails = true
-        // No token passed to VM method
         viewModel.fetchLessonDetails(lessonId: lessonId) { result in
             isFetchingDetails = false
             switch result {
@@ -136,10 +132,11 @@ struct AdminUpdateLessonView: View {
                 self.title = lesson.title
                 self.descriptionText = lesson.desc
                 self.contentText = lesson.content
-                self.originalImageUrl = lesson.imageUrl
                 self.originalUserId = lesson.userId
             case .failure(let error):
                 onShowError("Failed to load lesson details: \(error.localizedDescription)")
+                // Optionally dismiss if details can't be loaded:
+                // dismiss()
             }
         }
     }
@@ -154,30 +151,24 @@ struct AdminUpdateLessonView: View {
             return
         }
         
-        let userIdForUpdate: String?
-        if let fetchedUserId = self.originalUserId {
-            userIdForUpdate = fetchedUserId
-        } else {
-            // This logic might need refinement based on whether an admin is updating
-            // someone else's lesson or if userId should always be the current admin.
-            // For now, it mirrors the previous logic but without a token.
-            userIdForUpdate = Auth.auth().currentUser?.uid
-        }
+        // Use the originalUserId if available; otherwise, assign the current admin's UID.
+        // This assumes that if originalUserId is nil, the admin is effectively "claiming" or setting the owner.
+        let userIdForUpdate: String? = self.originalUserId ?? Auth.auth().currentUser?.uid
 
         let updatedLesson = Lesson(
             id: lessonId,
             title: trimmedTitle,
             desc: trimmedDescription,
             content: trimmedContent,
-            imageUrl: originalImageUrl,
-            userId: userIdForUpdate
+            userId: userIdForUpdate // Ensure your Lesson struct and backend can handle this userId logic
         )
         
-        // No token passed to VM method
         viewModel.updateExistingLesson(updatedLesson,
             onSuccess: {
-                onLessonUpdated()
+                onLessonUpdated() // This should trigger UI update/dismissal in the parent view
                 viewModel.resetStatusFlags()
+                // If onLessonUpdated doesn't cause dismissal, you might call dismiss() here too.
+                // dismiss()
             },
             onError: { errorMessage in
                 onShowError(errorMessage)
@@ -186,18 +177,33 @@ struct AdminUpdateLessonView: View {
     }
 }
 
-struct AdminUpdateLessonView_Previews: PreviewProvider {
-    static var previews: some View {
-        // Ensure Firebase is configured for the preview
-        if FirebaseApp.app() == nil {
-            FirebaseApp.configure()
-        }
+// Make sure primaryOrange is defined and accessible.
+// For example, if it's not globally defined, you might add it for the preview or within your app's constants.
+// let primaryOrange = Color.orange
 
-        return AdminUpdateLessonView(
+// Ensure Lesson struct is defined, matching your data model (especially `userId` type)
+// struct Lesson: Identifiable {
+//     var id: String
+//     var title: String
+//     var desc: String
+//     var content: String
+//     var userId: String? // Or String, depending on requirements
+// }
+
+// Ensure AdminUpdateLessonViewModel and other dependencies are correctly defined.
+
+#Preview {
+    // Define a dummy primaryOrange for the preview if not globally available
+    let primaryOrange = Color.orange
+
+    NavigationView {
+        AdminUpdateLessonView(
             lessonId: "previewLesson123",
-            onLessonUpdated: { print("Preview: Lesson Updated") },
-            onShowError: { error in print("Preview: Error - \(error)") }
+            onLessonUpdated: { print("Preview: Lesson updated!") },
+            onShowError: { error in print("Preview Error: \(error)") }
         )
-        .environmentObject(AdminUpdateLessonViewModel())
+        .environmentObject(AuthViewModel()) // Dummy or real AuthViewModel
+        .environmentObject(AdminUpdateLessonViewModel()) // Dummy or real AdminUpdateLessonViewModel
+        // .environmentObject(ReportViewModel()) // If BotAppBar needs it
     }
 }
