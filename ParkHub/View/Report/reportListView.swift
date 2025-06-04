@@ -4,14 +4,34 @@ import SwiftUI
 struct reportListView: View {
     @EnvironmentObject var reportVM: ReportViewModel
     @EnvironmentObject var authVM: AuthViewModel
+    @Environment(\.dismiss) var dismiss // <-- Added for back navigation
 
     // Assuming TopAppBar and BotAppBar are defined elsewhere
-    // If not, you'll need to provide their definitions or comment them out.
-    // For this example, I'll assume they exist.
+    // Assuming primaryOrange or a similar color constant is defined if used for the button
 
     var body: some View {
         VStack(spacing: 0) { // No spacing between app bars and content
             TopAppBar() // Your custom TopAppBar
+
+            // --- Custom Back Button ---
+            HStack {
+                Button(action: {
+                    dismiss() // Action to go back
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 17, weight: .semibold))
+                        Text("Back")
+                            .font(.system(size: 17))
+                    }
+                    .foregroundColor(.accentColor) // Using .accentColor for a generic theme-aware color
+                                                 // Or use your app's specific color like primaryOrange
+                }
+                Spacer() // Pushes the button to the leading edge
+            }
+            .padding([.leading, .top]) // Minimal padding
+            .padding(.bottom, 5)    // Small space below
+            // No explicit background added here to keep it minimal; it will inherit from parent or be transparent.
 
             // Main content area
             Group { // Group to apply frame and handle states
@@ -93,6 +113,11 @@ struct reportListView: View {
     // struct TopAppBar: View { var body: some View { Text("Top App Bar Preview").padding().background(Color.blue.opacity(0.3)) } }
     // struct BotAppBar: View { var body: some View { Text("Bot App Bar Preview").padding().background(Color.green.opacity(0.3)) } }
 
+    // Ensure Report and reportCardView structs are defined for preview if not globally accessible
+    // struct Report: Identifiable { /* minimal definition */ let id = UUID(); let reportId: String; let userId: String; let username: String; let title: String; let description: String; let timestamp: TimeInterval; }
+    // struct reportCardView: View { /* minimal definition */ let report: Report; let currentUserId: String?; @ObservedObject var reportViewModel: ReportViewModel; var body: some View { Text(report.title) } }
+
+
     let authVM_preview = AuthViewModel()
     // To test delete button visibility in preview, you'd mock a logged-in user:
     // For example, if you have a way to create a FirebaseAuth.User mock or a simplified User struct for preview:
@@ -100,11 +125,14 @@ struct reportListView: View {
 
     let reportVM_preview = ReportViewModel()
     // Populate with dummy data that matches the current Report model (no imageUrl)
+    // Ensure Report struct is defined matching this data for the preview to compile
+    /*
     reportVM_preview.reports = [
         Report(reportId: "prev1", userId: "user1_preview", username: "First User", title: "Leaky Faucet in Restroom A", description: "The faucet in the main restroom has been leaking for two days.", timestamp: Date(timeIntervalSinceNow: -3600 * 24 * 2).timeIntervalSince1970 * 1000), // 2 days ago
         Report(reportId: "prev2", userId: "user2_preview", username: "Second User", title: "Broken Light Fixture", description: "Parking lot light near section C is out.", timestamp: Date(timeIntervalSinceNow: -3600 * 5).timeIntervalSince1970 * 1000), // 5 hours ago
         Report(reportId: "prev3", userId: "user1_preview", username: "First User", title: "Graffiti on Wall", description: "Offensive graffiti found on the east wall of the building.", timestamp: Date().timeIntervalSince1970 * 1000) // Now
     ]
+    */
     // reportVM_preview.isLoading = true // To test loading state
     // reportVM_preview.errorMessage = "A sample error message for preview." // To test error state
     // reportVM_preview.reports = [] // To test empty state
@@ -116,4 +144,3 @@ struct reportListView: View {
     }
     // .preferredColorScheme(.dark) // To test dark mode
 }
-

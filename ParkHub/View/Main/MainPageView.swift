@@ -25,171 +25,206 @@ struct MainPageView: View {
     }
     
     var body: some View {
-        // The outer NavigationView might be removed if TopAppBar/BotAppBar
-        // are meant to be the sole navigation system for this screen.
-        // For now, let's keep it to allow NavigationLinks to work,
-        // but we'll hide its bar if TopAppBar is present.
         NavigationView {
-            VStack(spacing: 0) { // Use spacing: 0 to have app bars flush
+            VStack(spacing: 0) {
                 if authVM.isSignedIn {
-                    TopAppBar() // Added TopAppBar
+                    TopAppBar()
                     
-                    ScrollView { // Main content is scrollable
-                        VStack { // Content VStack
-                            Text("Welcome to ParkHub!")
-                                .font(.largeTitle)
-                                .padding()
-                            
-                            if let user = authVM.firebaseAuthUser {
-                                Text("Hello, \(user.displayName ?? user.email ?? "User")!")
-                                    .font(.title2)
-                                    .padding(.bottom)
+                    ScrollView {
+                        VStack(spacing: 24) {
+                            // Welcome Header Section
+                            VStack(spacing: 12) {
+                                Text("Welcome to ParkHub!")
+                                    .font(.largeTitle)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.primary)
+                                
+                                if let user = authVM.firebaseAuthUser {
+                                    Text("Hello, \(user.displayName ?? user.email ?? "User")!")
+                                        .font(.title3)
+                                        .foregroundColor(.secondary)
+                                }
                             }
+                            .padding(.top, 20)
+                            .padding(.horizontal)
                             
-                            // --- Admin Specific Options ---
+                            // Admin Panel Section
                             if isAdminUser {
-                                Text("Admin Panel")
-                                    .font(.title3)
-                                    .fontWeight(.semibold)
-                                    .padding(.top)
-                                
-                                NavigationLink {
-                                    AdminManageLessonView( // Ensure AdminManageLessonView is defined
-                                        token: authVM.firebaseAuthUser?.uid ?? "admin_token_error",
-                                        onLogout: {
-                                            authVM.signOut()
+                                VStack(spacing: 16) {
+                                    HStack {
+                                        Text("Admin Panel")
+                                            .font(.title2)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.primary)
+                                        Spacer()
+                                    }
+                                    
+                                    VStack(spacing: 12) {
+                                        NavigationLink {
+                                            AdminManageLessonView(
+                                                token: authVM.firebaseAuthUser?.uid ?? "admin_token_error",
+                                                onLogout: {
+                                                    authVM.signOut()
+                                                }
+                                            )
+                                        } label: {
+                                            HomeActionCard(
+                                                title: "Manage Lessons",
+                                                icon: "slider.horizontal.3",
+                                                subtitle: "Edit and organize lessons"
+                                            )
                                         }
-                                    )
-                                } label: {
-                                    Label("Manage Lessons", systemImage: "slider.horizontal.3")
-                                        .font(.headline)
-                                }
-                                .padding()
-                                .buttonStyle(.borderedProminent)
-                                .tint(.purple)
-                                
-                                NavigationLink {
-                                    AdminCreateLessonView( // Ensure AdminCreateLessonView is defined
-                                        token: authVM.firebaseAuthUser?.uid ?? "admin_token_error_direct_create",
-                                        onLessonCreated: {
-                                            self.adminActionAlertInfo = AlertInfo(message: "Lesson created successfully!", isError: false)
-                                        },
-                                        onShowError: { errorMessage in
-                                            self.adminActionAlertInfo = AlertInfo(message: errorMessage, isError: true)
+                                        
+                                        NavigationLink {
+                                            AdminCreateLessonView(
+                                                token: authVM.firebaseAuthUser?.uid ?? "admin_token_error_direct_create",
+                                                onLessonCreated: {
+                                                    self.adminActionAlertInfo = AlertInfo(message: "Lesson created successfully!", isError: false)
+                                                },
+                                                onShowError: { errorMessage in
+                                                    self.adminActionAlertInfo = AlertInfo(message: errorMessage, isError: true)
+                                                }
+                                            )
+                                            .environmentObject(directAdminCreateLessonVM)
+                                            .navigationTitle("Create New Lesson")
+                                            .navigationBarTitleDisplayMode(.inline)
+                                        } label: {
+                                            HomeActionCard(
+                                                title: "Create New Lesson",
+                                                icon: "plus.rectangle.on.folder",
+                                                subtitle: "Add new educational content"
+                                            )
                                         }
-                                    )
-                                    .environmentObject(directAdminCreateLessonVM)
-                                    .navigationTitle("Create New Lesson") // This title will be shown by NavigationView if its bar is visible
-                                    .navigationBarTitleDisplayMode(.inline)
-                                } label: {
-                                    Label("Create New Lesson", systemImage: "plus.rectangle.on.folder")
-                                        .font(.headline)
+                                    }
                                 }
-                                .padding()
-                                .buttonStyle(.borderedProminent)
-                                .tint(.purple)
+                                .padding(.horizontal)
                                 
-                                Divider().padding(.horizontal)
+                                Divider()
+                                    .padding(.horizontal)
                             }
-                            // --- End of Admin Specific Options ---
                             
-                            // Button to create a new report (presents a sheet)
-                            Button {
-                                reportVM.clearInputFields()
-                                showingSubmitReportSheet = true
-                            } label: {
-                                Label("Create New Report", systemImage: "plus.circle.fill")
-                                    .font(.headline)
+                            // Main Actions Section
+                            VStack(spacing: 16) {
+                                HStack {
+                                    Text("Quick Actions")
+                                        .font(.title2)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.primary)
+                                    Spacer()
+                                }
+                                .padding(.horizontal)
+                                
+                                LazyVGrid(columns: [
+                                    GridItem(.flexible()),
+                                    GridItem(.flexible())
+                                ], spacing: 16) {
+                                    Button {
+                                        reportVM.clearInputFields()
+                                        showingSubmitReportSheet = true
+                                    } label: {
+                                        HomeGridCard(
+                                            title: "Create Report",
+                                            icon: "plus.circle.fill",
+                                            color: .blue
+                                        )
+                                    }
+                                    
+                                    NavigationLink {
+                                        reportListView()
+                                            .navigationTitle("All Reports")
+                                            .navigationBarTitleDisplayMode(.inline)
+                                    } label: {
+                                        HomeGridCard(
+                                            title: "View Reports",
+                                            icon: "list.bullet.rectangle.fill",
+                                            color: .blue
+                                        )
+                                    }
+                                    
+                                    Button {
+                                        showingBrowseLessonsSheet = true
+                                    } label: {
+                                        HomeGridCard(
+                                            title: "Browse Lessons",
+                                            icon: "book.closed.fill",
+                                            color: .blue
+                                        )
+                                    }
+                                    
+                                    NavigationLink {
+                                        LocationView()
+                                    } label: {
+                                        HomeGridCard(
+                                            title: "View Locations",
+                                            icon: "map.fill",
+                                            color: .blue
+                                        )
+                                    }
+                                }
+                                .padding(.horizontal)
                             }
-                            .padding()
-                            .buttonStyle(.borderedProminent)
-                            .tint(.orange)
                             
-                            // NavigationLink to reportListView
-                            NavigationLink {
-                                reportListView() // Assuming reportListView is defined
-                                    .navigationTitle("All Reports")
-                                    .navigationBarTitleDisplayMode(.inline)
-                            } label: {
-                                Label("View All Reports", systemImage: "list.bullet.rectangle.fill")
-                                    .font(.headline)
+                            Spacer(minLength: 40)
+                            
+                            // Logout Section
+                            VStack {
+                                Button("Sign Out") {
+                                    authVM.signOut()
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(Color(.systemGray6))
+                                .foregroundColor(.red)
+                                .cornerRadius(12)
+                                .font(.headline)
                             }
-                            .padding()
-                            .buttonStyle(.bordered)
-                            .tint(.blue)
-                            
-                            // Button to show Lessons Section in a Sheet (for regular users)
-                            Button {
-                                showingBrowseLessonsSheet = true
-                            } label: {
-                                Label("Browse Lessons", systemImage: "book.closed.fill")
-                                    .font(.headline)
-                            }
-                            .padding()
-                            .buttonStyle(.borderedProminent)
-                            .tint(.green)
-                            
-                            // NavigationLink to LocationView
-                            NavigationLink {
-                                LocationView() // Destination is your LocationView
-                            } label: {
-                                Label("View Locations", systemImage: "map.fill")
-                                    .font(.headline)
-                            }
-                            .padding()
-                            .buttonStyle(.bordered)
-                            .tint(.cyan)
-                            
-                            // Spacer() // Removed spacer to let content naturally flow, logout button is distinct
-                            
-                            Button("Log Out") {
-                                authVM.signOut()
-                            }
-                            .padding() // Add vertical padding to separate from last item
-                            .buttonStyle(.bordered)
-                            .tint(.red)
-                            .padding(.bottom, 20) // Ensure some space before BotAppBar if content is short
-                            
-                        } // End of Content VStack
-                        .padding(.horizontal) // Add some horizontal padding to the content inside ScrollView
-                    } // End of ScrollView
+                            .padding(.horizontal)
+                            .padding(.bottom, 20)
+                        }
+                    }
                     
-                    BotAppBar() // Added BotAppBar
+                    BotAppBar()
                     
                 } else {
-                    // Content to show when the user IS NOT signed in (remains the same, no Top/BotAppBar)
-                    // This section fills the whole screen.
-                    // If you want a consistent background or structure even for the logged-out state,
-                    // you might need to adjust this part.
-                    ZStack { // Use ZStack to overlay LogoBig on a background
-                        // Optional: Add a background color/image for the logged-out state
-                        // Color.gray.opacity(0.1).ignoresSafeArea()
+                    // Logged out state
+                    ZStack {
+                        Color(.systemGroupedBackground)
+                            .ignoresSafeArea()
                         
-                        VStack {
+                        VStack(spacing: 30) {
                             Spacer()
+                            
+                            VStack(spacing: 16) {
+                                Text("Welcome to ParkHub")
+                                    .font(.largeTitle)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.primary)
+                                
+                                Text("Please log in or register to continue.")
+                                    .font(.title3)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal)
+                            }
+                            
                             Button("Login / Register") {
                                 authVM.clearInputFields()
                                 authVM.clearAuthError()
                                 self.showAuthSheet = true
                             }
-                            .padding()
-                            .buttonStyle(.borderedProminent)
-                            
-                            
-                            Text("Please log in or register to continue.")
-                                .font(.headline)
-                                .multilineTextAlignment(.center)
-                                .padding()
+                            .frame(maxWidth: 200)
+                            .padding(.vertical, 16)
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                            .font(.headline)
                             
                             Spacer()
                         }
                     }
                 }
             }
-            // .navigationTitle("ParkHub") // This would be hidden by .navigationBarHidden(true)
-            // .navigationBarTitleDisplayMode(.inline)
-            .navigationBarHidden(authVM.isSignedIn) // Hide system nav bar if signed in (TopAppBar is used)
-            // Show system nav bar if not signed in (to show "ParkHub" title)
+            .navigationBarHidden(authVM.isSignedIn)
             .onAppear {
                 if !authVM.isSignedIn && !showAuthSheet {
                     isRegistering = false
@@ -203,17 +238,17 @@ struct MainPageView: View {
                     print("Auth sheet dismissed, user still not signed in.")
                 }
             }) {
-                AuthSheetContainerView(isRegisteringInitially: $isRegistering) // Ensure AuthSheetContainerView is defined
+                AuthSheetContainerView(isRegisteringInitially: $isRegistering)
                     .environmentObject(authVM)
             }
             .sheet(isPresented: $showingSubmitReportSheet) {
-                NavigationView { // Sheet content often has its own NavigationView
-                    submitReportView() // Assuming submitReportView is defined
+                NavigationView {
+                    submitReportView()
                 }
             }
             .sheet(isPresented: $showingBrowseLessonsSheet) {
-                NavigationView { // Sheet content often has its own NavigationView
-                    LessonPageView() // Ensure LessonPageView is defined
+                NavigationView {
+                    LessonPageView()
                         .navigationTitle("Browse Lessons")
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbar {
@@ -246,15 +281,70 @@ struct MainPageView: View {
                     dismissButton: .default(Text("OK"))
                 )
             }
-        } // End of NavigationView
-        // If TopAppBar/BotAppBar are the primary navigation, the outer NavigationView might be removed
-        // and replaced with a simple View or ZStack. NavigationLinks would then need to
-        // be handled differently (e.g., by changing a @State var that swaps views, or using NavigationStack for sub-sections).
+        }
     }
 }
 
-// Ensure all referenced views and ViewModels are defined.
-// Make sure AlertInfo, TopAppBar, BotAppBar, LogoBig, etc., are accessible.
+// MARK: - Supporting Views
+
+struct HomeActionCard: View {
+    let title: String
+    let icon: String
+    let subtitle: String
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundColor(.blue)
+                .frame(width: 40, height: 40)
+                .background(Color.blue.opacity(0.1))
+                .cornerRadius(10)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
+    }
+}
+
+struct HomeGridCard: View {
+    let title: String
+    let icon: String
+    let color: Color
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.largeTitle)
+                .foregroundColor(color)
+            
+            Text(title)
+                .font(.headline)
+                .foregroundColor(.primary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 120)
+        .background(Color(.systemGray6))
+        .cornerRadius(16)
+    }
+}
 
 struct AuthSheetContainerView: View {
     @EnvironmentObject var authVM: AuthViewModel
@@ -269,13 +359,11 @@ struct AuthSheetContainerView: View {
     }
     
     var body: some View {
-        NavigationView { // Or NavigationStack for iOS 16+
+        NavigationView {
             Group {
                 if currentIsRegistering {
-                    // Assuming RegisterView is defined in its own file and accessible
                     RegisterView(showRegisterSheet: $currentIsRegistering)
                 } else {
-                    // Assuming LoginView is defined in its own file and accessible
                     LoginView(showRegisterSheet: $currentIsRegistering)
                 }
             }
@@ -304,19 +392,7 @@ struct AuthSheetContainerView: View {
 }
 
 #Preview {
-    // Use placeholder views for dependencies if the actual ones are not available or too complex for preview
-    // Replace _PreviewDummy with your actual views if they are simple enough for preview
     MainPageView()
-        .environmentObject(AuthViewModel()) // Standard AuthViewModel instance
+        .environmentObject(AuthViewModel())
         .environmentObject(ReportViewModel())
-    // Provide dummy views for the preview if needed, e.g. by renaming reportListView to reportListView_PreviewDummy
-    // .environmentObject(LessonViewModel()) // If LessonPageView or its children need it
-    // For the preview to compile, ensure that reportListView, submitReportView, LogoBig,
-    // AuthSheetContainerView, and LessonPageView are either:
-    // 1. Defined in a way that the preview can access them.
-    // 2. Replaced by dummy versions for the preview scope (like the _PreviewDummy examples above).
-    //    If using dummies, you would call reportListView_PreviewDummy() in the MainPageView body for the preview.
-    //    This can be done with conditional compilation (#if DEBUG ... #else ... #endif) around the view calls
-    //    in MainPageView's body, or by ensuring the preview target has access to simple dummy views.
-    //    The current setup assumes the actual views are accessible.
 }
