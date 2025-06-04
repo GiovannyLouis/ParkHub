@@ -1,81 +1,83 @@
-//
-//  is.swift
-//  ParkHub
-//
-//  Created by Axel Valerio Ertamto on 03/06/25.
-//
-
+// File: AdminUpdateLessonViewModel.swift
 
 import FirebaseDatabase
 import FirebaseAuth
 import Foundation
 
-// Assuming Lesson struct is defined elsewhere
-// struct Lesson: Identifiable, Hashable, Codable { ... }
+// Assuming Lesson struct is defined elsewhere and does NOT include imageUrl
 
 class AdminUpdateLessonViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var updateError: String? = nil
-    @Published var updateSuccess: Bool = false
+    @Published var updateSuccess: Bool = false // To notify the view of success
 
     private var ref: DatabaseReference!
 
     init() {
-        self.ref = Database.database().reference().child("lessons")
+        // if FirebaseApp.app() == nil { FirebaseApp.configure() }
+        self.ref = Database.database().reference().child("lessons") // Or your specific Firebase path
     }
 
-    // No token parameter needed here
     func fetchLessonDetails(lessonId: String, completion: @escaping (Result<Lesson, Error>) -> Void) {
-        ref.child(lessonId).observeSingleEvent(of: .value) { snapshot in
+        isLoading = true // Indicate loading started
+        updateError = nil
+        
+        ref.child(lessonId).observeSingleEvent(of: .value) { [weak self] snapshot in
+            guard let self = self else { return }
+            self.isLoading = false // Loading finished
+
             guard snapshot.exists(), let dict = snapshot.value as? [String: Any] else {
                 completion(.failure(NSError(domain: "FirebaseError", code: 404, userInfo: [NSLocalizedDescriptionKey: "Lesson not found."])))
                 return
             }
 
+            // Create Lesson object without imageUrl
             let lesson = Lesson(
                 id: snapshot.key,
                 title: dict["title"] as? String ?? "",
                 desc: dict["desc"] as? String ?? "",
                 content: dict["content"] as? String ?? "",
-                imageUrl: dict["imageUrl"] as? String,
+                // imageUrl removed
                 userId: dict["userId"] as? String
             )
             completion(.success(lesson))
-        } withCancel: { error in
+        } withCancel: { [weak self] error in
+            guard let self = self else { return }
+            self.isLoading = false // Loading finished
             completion(.failure(error))
         }
     }
 
-    // No token parameter needed here
     func updateExistingLesson(_ lesson: Lesson, onSuccess: @escaping () -> Void, onError: @escaping (String) -> Void) {
         isLoading = true
         updateError = nil
         updateSuccess = false
 
-        // User check - ensure an admin or authorized user is performing this
-        // This might involve checking Auth.auth().currentUser?.uid against an admin list
-        // or relying on Firebase rules. For simplicity, we assume authorization is handled.
         guard Auth.auth().currentUser != nil else {
-            updateError = "User not authenticated to perform this action."
-            isLoading = false
-            onError(updateError!)
+            let errorMsg = "User not authenticated to perform this action."
+            self.updateError = errorMsg
+            self.isLoading = false
+            onError(errorMsg)
             return
         }
 
         if lesson.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
            lesson.desc.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
            lesson.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            updateError = "Title, Description, and Content cannot be empty."
-            isLoading = false
-            onError(updateError!)
+            let errorMsg = "Title, Description, and Content cannot be empty."
+            self.updateError = errorMsg
+            self.isLoading = false
+            onError(errorMsg)
             return
         }
         
+        // JSONEncoder will correctly encode the Lesson struct (which no longer has imageUrl)
         guard let jsonData = try? JSONEncoder().encode(lesson),
               let json = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else {
-            updateError = "Failed to prepare lesson data for saving."
-            isLoading = false
-            onError(updateError!)
+            let errorMsg = "Failed to prepare lesson data for saving."
+            self.updateError = errorMsg
+            self.isLoading = false
+            onError(errorMsg)
             return
         }
         
@@ -84,9 +86,10 @@ class AdminUpdateLessonViewModel: ObservableObject {
             
             self.isLoading = false
             if let error = error {
-                self.updateError = "Failed to update lesson: \(error.localizedDescription)"
+                let errorMsg = "Failed to update lesson: \(error.localizedDescription)"
+                self.updateError = errorMsg
                 self.updateSuccess = false
-                onError(self.updateError!)
+                onError(errorMsg)
             } else {
                 self.updateSuccess = true
                 onSuccess()
