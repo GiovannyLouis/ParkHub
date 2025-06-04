@@ -22,7 +22,7 @@ struct TopAppBar: View {
             Button(action: {
                 authVM.signOut() // Call signOut on the AuthViewModel
             }) {
-                Text("Logout")
+                Text("Log Out")
                     .font(.system(size: 16)) // Consistent font size
                     .foregroundColor(.white)
                     .padding(.horizontal, 12) // Consistent padding

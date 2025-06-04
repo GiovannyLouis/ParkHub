@@ -59,7 +59,7 @@ struct LessonPageView: View {
                         .multilineTextAlignment(.center)
                         .padding()
                     Button("Try Again") {
-                        fetchLessons()
+                        lessonVM.fetchAllLessons()
                     }
                     .padding()
                     .buttonStyle(.borderedProminent)
@@ -74,7 +74,7 @@ struct LessonPageView: View {
                         .foregroundColor(.gray)
                         .padding()
                     Button("Refresh") {
-                        fetchLessons()
+                        lessonVM.fetchAllLessons()
                     }
                     .padding()
                     .buttonStyle(.bordered)
@@ -93,7 +93,7 @@ struct LessonPageView: View {
                 }
                 .listStyle(PlainListStyle())
                 .refreshable { // Pull-to-refresh
-                    fetchLessons()
+                    lessonVM.fetchAllLessons()
                 }
             }
             
@@ -103,7 +103,7 @@ struct LessonPageView: View {
         .onAppear {
             // Fetch lessons only if the list is currently empty and not already loading
             if lessonVM.lessons.isEmpty && !lessonVM.isLoading {
-                fetchLessons()
+                lessonVM.fetchAllLessons()
             }
         }
         .onDisappear {
@@ -112,18 +112,6 @@ struct LessonPageView: View {
         }
         // .navigationBarHidden(true) // This view has its own TopAppBar, so hide system nav bar
                                    // if this view is pushed onto a NavigationView stack.
-    }
-
-    private func fetchLessons() {
-        guard let userId = authVM.firebaseAuthUser?.uid else {
-            lessonVM.errorMessage = "User not authenticated. Cannot fetch lessons."
-            // Optionally, you could clear existing lessons if re-authentication is required.
-            // lessonVM.lessons = []
-            return
-        }
-        // Assuming your LessonViewModel's fetchAllLessons takes a token (like userId)
-        // If your rules allow unauthenticated reads for lessons, you might pass a different placeholder.
-        lessonVM.fetchAllLessons(token: userId)
     }
 }
 

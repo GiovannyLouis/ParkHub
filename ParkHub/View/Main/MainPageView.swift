@@ -1,18 +1,12 @@
-// MainPageView.swift
-// ParkHub
-// Created by student on 03/06/25.
-
 import SwiftUI
-
-// Assuming AlertInfo is defined globally or imported
-// struct AlertInfo: Identifiable { let id = UUID(); let message: String; let isError: Bool }
 
 struct MainPageView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @EnvironmentObject var reportVM: ReportViewModel
     
-    @StateObject var directAdminCreateLessonVM = AdminCreateLessonViewModel() // Ensure this VM is defined
-    @State private var adminActionAlertInfo: AlertInfo? // Ensure AlertInfo is defined
+    @StateObject var adminLessonVM = AdminLessonViewModel() // Use AdminLessonViewModel here
+    
+    @State private var adminActionAlertInfo: AlertInfo? // Make sure AlertInfo is defined
     
     @State private var showAuthSheet = false
     @State private var isRegistering = false
@@ -67,6 +61,7 @@ struct MainPageView: View {
                                                     authVM.signOut()
                                                 }
                                             )
+                                            .environmentObject(adminLessonVM) // Pass AdminLessonViewModel
                                         } label: {
                                             HomeActionCard(
                                                 title: "Manage Lessons",
@@ -85,7 +80,7 @@ struct MainPageView: View {
                                                     self.adminActionAlertInfo = AlertInfo(message: errorMessage, isError: true)
                                                 }
                                             )
-                                            .environmentObject(directAdminCreateLessonVM)
+                                            .environmentObject(adminLessonVM) // Pass AdminLessonViewModel here too
                                             .navigationTitle("Create New Lesson")
                                             .navigationBarTitleDisplayMode(.inline)
                                         } label: {
@@ -166,20 +161,6 @@ struct MainPageView: View {
                             
                             Spacer(minLength: 40)
                             
-                            // Logout Section
-                            VStack {
-                                Button("Sign Out") {
-                                    authVM.signOut()
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(Color(.systemGray6))
-                                .foregroundColor(.red)
-                                .cornerRadius(12)
-                                .font(.headline)
-                            }
-                            .padding(.horizontal)
-                            .padding(.bottom, 20)
                         }
                     }
                     
@@ -229,7 +210,9 @@ struct MainPageView: View {
                 if !authVM.isSignedIn && !showAuthSheet {
                     isRegistering = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        showAuthSheet = true
+                        if !authVM.isSignedIn {  // Double check user still not signed in
+                            showAuthSheet = true
+                        }
                     }
                 }
             }
@@ -238,8 +221,10 @@ struct MainPageView: View {
                     print("Auth sheet dismissed, user still not signed in.")
                 }
             }) {
-                AuthSheetContainerView(isRegisteringInitially: $isRegistering)
-                    .environmentObject(authVM)
+                if !authVM.isSignedIn {
+                    AuthSheetContainerView(isRegisteringInitially: $isRegistering)
+                        .environmentObject(authVM)
+                }
             }
             .sheet(isPresented: $showingSubmitReportSheet) {
                 NavigationView {
@@ -269,7 +254,9 @@ struct MainPageView: View {
                     if !showAuthSheet {
                         isRegistering = false
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            showAuthSheet = true
+                            if !authVM.isSignedIn {
+                                showAuthSheet = true
+                            }
                         }
                     }
                 }
@@ -395,4 +382,5 @@ struct AuthSheetContainerView: View {
     MainPageView()
         .environmentObject(AuthViewModel())
         .environmentObject(ReportViewModel())
+        .environmentObject(AdminLessonViewModel())
 }
