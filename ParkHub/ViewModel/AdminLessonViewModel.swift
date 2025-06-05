@@ -76,18 +76,19 @@ class AdminLessonViewModel: ObservableObject {
         creationError = nil
     }
     
-    func fetchLessonDetails(lessonId: String, completion: @escaping (Result<Lesson, Error>) -> Void) {
-        isLoading = true
-        updateError = nil
-        
-        repository.fetchLessonDetails(lessonId: lessonId) { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                self.isLoading = false
-                completion(result)
+    func fetchLessonDetails(lessonId: String) async -> Result<Lesson, Error> {
+            await MainActor.run {
+                isLoading = true
+                updateError = nil // Or a general errorMessage
             }
+
+            let result = await repository.fetchLessonDetails(lessonId: lessonId)
+
+            await MainActor.run {
+                isLoading = false
+            }
+            return result
         }
-    }
     
     func updateExistingLesson(_ lesson: Lesson, onSuccess: @escaping () -> Void, onError: @escaping (String) -> Void) {
         isLoading = true

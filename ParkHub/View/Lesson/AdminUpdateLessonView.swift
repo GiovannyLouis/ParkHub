@@ -111,25 +111,43 @@ struct AdminUpdateLessonView: View {
 
             BotAppBar()
         }
-        .onAppear(perform: loadLessonDetails)
+        .task(id: lessonId) { // Automatically cancels if the view disappears or lessonId changes
+            await loadLessonDetails()
+        }
+//        .onAppear(perform: loadLessonDetailsAsync())
         .navigationBarHidden(true)
     }
+    
+    private func loadLessonDetails() async {
+            print("AdminUpdateLessonView - loadLessonDetailsAsync called with lessonId: '\(lessonId)'")
+            guard !Task.isCancelled else {
+                print("AdminUpdateLessonView - Task cancelled before starting fetch.")
+                return
+            }
 
-    private func loadLessonDetails() {
-        isFetchingDetails = true
-        viewModel.fetchLessonDetails(lessonId: lessonId) { result in
+            isFetchingDetails = true
+            let result = await viewModel.fetchLessonDetails(lessonId: lessonId)
+
+            guard !Task.isCancelled else {
+                print("AdminUpdateLessonView - Task cancelled during fetch.")
+                isFetchingDetails = false
+                return
+            }
+
             isFetchingDetails = false
             switch result {
             case .success(let lesson):
+                print("AdminUpdateLessonView - Successfully fetched lesson: \(lesson.title)")
                 title = lesson.title
                 descriptionText = lesson.desc
                 contentText = lesson.content
                 originalUserId = lesson.userId
             case .failure(let error):
+                print("AdminUpdateLessonView - Failed to fetch lesson: \(error.localizedDescription)")
                 onShowError("Failed to load lesson details: \(error.localizedDescription)")
             }
         }
-    }
+
 
     private func attemptUpdateLesson() {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)

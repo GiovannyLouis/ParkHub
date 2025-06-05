@@ -11,9 +11,10 @@ struct AlertInfo: Identifiable {
 
 struct AdminManageLessonView: View {
     @EnvironmentObject var authVM: AuthViewModel
+    @StateObject var viewModel = AdminLessonViewModel()
+
     @Environment(\.dismiss) var dismiss
 
-    @StateObject var viewModel = AdminLessonViewModel() // Combined ViewModel
 
     let token: String
     var onLogout: () -> Void
@@ -228,5 +229,7 @@ struct AdminLessonCard: View {
             }
         )
         .environmentObject(AuthViewModel())
+        .environmentObject(AdminLessonViewModel())
+
     }
 }

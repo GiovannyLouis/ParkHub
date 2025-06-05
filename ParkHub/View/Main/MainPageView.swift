@@ -4,7 +4,7 @@ struct MainPageView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @EnvironmentObject var reportVM: ReportViewModel
     
-    @StateObject var adminLessonVM = AdminLessonViewModel() // Use AdminLessonViewModel here
+    @EnvironmentObject var adminLessonVM: AdminLessonViewModel
     
     @State private var adminActionAlertInfo: AlertInfo? // Make sure AlertInfo is defined
     
@@ -61,7 +61,7 @@ struct MainPageView: View {
                                                     authVM.signOut()
                                                 }
                                             )
-                                            .environmentObject(adminLessonVM) // Pass AdminLessonViewModel
+                                            .environmentObject(authVM)
                                         } label: {
                                             HomeActionCard(
                                                 title: "Manage Lessons",
@@ -80,7 +80,9 @@ struct MainPageView: View {
                                                     self.adminActionAlertInfo = AlertInfo(message: errorMessage, isError: true)
                                                 }
                                             )
-                                            .environmentObject(adminLessonVM) // Pass AdminLessonViewModel here too
+                                            .environmentObject(authVM) // Pass AdminLessonViewModel here too
+
+                                            
                                             .navigationTitle("Create New Lesson")
                                             .navigationBarTitleDisplayMode(.inline)
                                         } label: {
