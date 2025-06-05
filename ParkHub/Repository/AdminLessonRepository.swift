@@ -74,27 +74,29 @@ class AdminLessonRepository {
         }
     }
     
-    // MARK: - Fetch lesson details
-    func fetchLessonDetails(lessonId: String, completion: @escaping (Result<Lesson, Error>) -> Void) {
-        ref.child(lessonId).observeSingleEvent(of: .value) { snapshot in
-            guard snapshot.exists(),
-                  let dict = snapshot.value as? [String: Any] else {
-                completion(.failure(NSError(domain: "FirebaseError", code: 404, userInfo: [NSLocalizedDescriptionKey: "Lesson not found."])))
-                return
+    func fetchLessonDetails(lessonId: String) async -> Result<Lesson, Error> {
+            do {
+                // Using Firebase's async/await API (requires Firebase SDK version that supports it, e.g., Firebase 9+ for Swift)
+                let snapshot = try await ref.child(lessonId).getData() // .getData() is async
+
+                guard snapshot.exists(),
+                      let dict = snapshot.value as? [String: Any] else {
+                    return .failure(NSError(domain: "FirebaseError", code: 404, userInfo: [NSLocalizedDescriptionKey: "Lesson not found."]))
+                }
+
+                let lesson = Lesson(
+                    id: snapshot.key,
+                    title: dict["title"] as? String ?? "",
+                    desc: dict["desc"] as? String ?? "",
+                    content: dict["content"] as? String ?? "",
+                    userId: dict["userId"] as? String
+                )
+                return .success(lesson)
+            } catch {
+                return .failure(error) // Propagate the error from Firebase
             }
-            
-            let lesson = Lesson(
-                id: snapshot.key,
-                title: dict["title"] as? String ?? "",
-                desc: dict["desc"] as? String ?? "",
-                content: dict["content"] as? String ?? "",
-                userId: dict["userId"] as? String
-            )
-            completion(.success(lesson))
-        } withCancel: { error in
-            completion(.failure(error))
         }
-    }
+    
     
     // MARK: - Update lesson
     func updateLesson(_ lesson: Lesson, completion: @escaping (Result<Void, Error>) -> Void) {

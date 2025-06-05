@@ -14,7 +14,6 @@ struct ParkHubApp: App {
     @StateObject var authVM = AuthViewModel()
     @StateObject var reportViewModel = ReportViewModel()
     @StateObject var lessonViewModel = LessonViewModel()
-
     
     init(){
         FirebaseApp.configure()
