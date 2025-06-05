@@ -3,18 +3,12 @@
 
 import SwiftUI
 
-// Assuming Lesson, LogoSmall, BotAppBar, primaryOrange, logoutRed are defined
-// (as they were in your provided code)
-
 struct LessonDetailView: View {
     let lesson: Lesson
-    // var onBackClick: () -> Void // REMOVED: Replaced by @Environment(\.dismiss)
-
-    @Environment(\.dismiss) var dismiss // ADDED: For programmatic dismissal
+    @Environment(\.dismiss) var dismiss
 
     var body: some View {
         VStack(spacing: 0) {
-            // Custom Top Bar
             VStack {
                 HStack {
                     LogoSmall()
@@ -23,7 +17,6 @@ struct LessonDetailView: View {
 
                     Button(action: {
                         print("Logout tapped from LessonDetail")
-                        // Implement actual logout logic here (e.g., using AuthViewModel)
                     }) {
                         Text("Logout")
                             .font(.system(size: 16))
@@ -42,13 +35,11 @@ struct LessonDetailView: View {
             .background(primaryOrange)
             .edgesIgnoringSafeArea(.top)
 
-            // Scrollable Content
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    // Back button and Title
                     HStack(spacing: 8) {
                         Button(action: {
-                            dismiss() // MODIFIED: Use dismiss action
+                            dismiss()
                         }) {
                             Image(systemName: "arrow.backward")
                                 .resizable()
@@ -62,7 +53,6 @@ struct LessonDetailView: View {
                         Spacer()
                     }
 
-                    // Lesson Content
                     Text(lesson.content)
                         .font(.system(size: 16))
                         .foregroundColor(.black)
@@ -77,12 +67,11 @@ struct LessonDetailView: View {
             BotAppBar()
         }
         .background(Color(UIColor.systemGroupedBackground).edgesIgnoringSafeArea(.all))
-        .navigationBarHidden(true) // This remains, as it has a custom top bar
+        .navigationBarHidden(true)
     }
 }
 
 #Preview {
-    // Preview now doesn't need onBackClick
     LessonDetailView(
         lesson: Lesson(
             id: "detail_prev_1",
@@ -90,6 +79,5 @@ struct LessonDetailView: View {
             desc: "A deep dive into advanced concepts.",
             content: "Sample content for preview..."
         )
-        // onBackClick: { } // No longer needed
     )
 }

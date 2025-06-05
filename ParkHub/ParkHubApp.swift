@@ -14,6 +14,7 @@ struct ParkHubApp: App {
     @StateObject var authVM = AuthViewModel()
     @StateObject var reportViewModel = ReportViewModel()
     @StateObject var lessonViewModel = LessonViewModel()
+    @StateObject var adminLessonViewModel = AdminLessonViewModel()
 
     
     init(){
@@ -32,6 +33,7 @@ struct ParkHubApp: App {
                 .environmentObject(authVM)
                 .environmentObject(reportViewModel)
                 .environmentObject(lessonViewModel)
+                .environmentObject(adminLessonViewModel)
         }
     }
 }

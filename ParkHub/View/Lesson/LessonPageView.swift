@@ -1,5 +1,4 @@
 // File: LessonPageView.swift
-// ParkHub
 
 import SwiftUI
 
@@ -17,33 +16,14 @@ extension Color {
 let logoutRed = Color(hex: 0xFFD9534F)
 let primaryOrange = Color(hex: 0xffffa001)
 
-// File: LessonPageView.swift
-// ParkHub
-
-
-// Ensure your Color extension and color constants (primaryOrange, logoutRed)
-// are defined globally or in a shared file accessible here.
-// Example:
-// extension Color {
-//    init(hex: UInt, alpha: Double = 1) { /* ... */ }
-// }
-// let primaryOrange = Color(hex: 0xffffa001)
-// let logoutRed = Color(hex: 0xFFD9534F)
-// Assume TopAppBar, BotAppBar, LessonCardView are defined.
-// Assume Lesson struct is defined.
-
 struct LessonPageView: View {
-    @EnvironmentObject var authVM: AuthViewModel // For TopAppBar and getting user ID
-    @StateObject var lessonVM = LessonViewModel() // ViewModel to fetch and hold lessons
-
-    // The 'token' prop is no longer needed if we fetch using authVM.currentUser.uid in onAppear.
-    // var token: String
+    @EnvironmentObject var authVM: AuthViewModel
+    @EnvironmentObject var lessonVM: LessonViewModel
 
     var body: some View {
         VStack(spacing: 0) {
-            TopAppBar() // Uses authVM from environment
+            TopAppBar()
 
-            // Content based on LessonViewModel's state
             if lessonVM.isLoading {
                 Spacer()
                 ProgressView("Loading lessons...")
@@ -52,7 +32,7 @@ struct LessonPageView: View {
                 Spacer()
             } else if let message = lessonVM.errorMessage {
                 Spacer()
-                VStack { // Added VStack for better layout of error message and retry
+                VStack {
                     Text(message)
                         .foregroundColor(.red)
                         .font(.system(size: 16))
@@ -66,7 +46,7 @@ struct LessonPageView: View {
                     .tint(primaryOrange)
                 }
                 Spacer()
-            } else if lessonVM.lessons.isEmpty { // No error, but no lessons
+            } else if lessonVM.lessons.isEmpty {
                 Spacer()
                 VStack {
                     Text("No lessons available at the moment.")
@@ -81,10 +61,9 @@ struct LessonPageView: View {
                 }
                 Spacer()
             } else {
-                // Display the list of lessons from the ViewModel
                 List {
-                    ForEach(lessonVM.lessons) { lesson in // Iterate over lessonVM.lessons
-                        LessonCardView(lesson: lesson) // Ensure LessonCardView is defined
+                    ForEach(lessonVM.lessons) { lesson in
+                        LessonCardView(lesson: lesson)
                             .listRowSeparator(.hidden)
                             .listRowInsets(EdgeInsets())
                             .padding(.horizontal, 16)
@@ -92,52 +71,28 @@ struct LessonPageView: View {
                     }
                 }
                 .listStyle(PlainListStyle())
-                .refreshable { // Pull-to-refresh
+                .refreshable {
                     lessonVM.fetchAllLessons()
                 }
             }
-            
-            BotAppBar() // BotAppBar for navigation
+
+            BotAppBar()
         }
         .background(Color(UIColor.systemGroupedBackground).edgesIgnoringSafeArea(.all))
         .onAppear {
-            // Fetch lessons only if the list is currently empty and not already loading
             if lessonVM.lessons.isEmpty && !lessonVM.isLoading {
                 lessonVM.fetchAllLessons()
             }
         }
         .onDisappear {
-            // If your LessonViewModel uses Firebase observers that need explicit removal
-            // lessonVM.removeObservers()
         }
-        // .navigationBarHidden(true) // This view has its own TopAppBar, so hide system nav bar
-                                   // if this view is pushed onto a NavigationView stack.
     }
 }
-
-// Ensure Lesson, LessonCardView, TopAppBar, BotAppBar, AuthViewModel, LessonViewModel are defined.
-// Ensure color constants like primaryOrange are defined.
 
 #Preview {
-    NavigationView { // For BotAppBar links & TopAppBar context
-        LessonPageView(
-            // token prop removed, fetching logic is internal
-        )
-        .environmentObject(AuthViewModel()) // Use mock for preview if needed
-        .environmentObject(ReportViewModel()) // If BotAppBar's report link is tested
-        // LessonViewModel is @StateObject within LessonPageView, so no need to inject here
-        // unless child views (navigated to from LessonCardView) need to share THIS instance.
+    NavigationView {
+        LessonPageView()
+            .environmentObject(AuthViewModel())
+            .environmentObject(LessonViewModel())
     }
 }
-
-// Add mockSignedIn to AuthViewModel for preview if not already present
-#if DEBUG
-// extension AuthViewModel {
-//    static func mockSignedIn() -> AuthViewModel {
-//        let vm = AuthViewModel()
-//        vm.isSignedIn = true
-//        // vm.firebaseAuthUser = ... // mock FirebaseUser if needed for displayName/email
-//        return vm
-//    }
-// }
-#endif

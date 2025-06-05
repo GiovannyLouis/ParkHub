@@ -3,10 +3,9 @@ import SwiftUI
 struct MainPageView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @EnvironmentObject var reportVM: ReportViewModel
+    @EnvironmentObject var adminLessonVM: AdminLessonViewModel
     
-    @StateObject var adminLessonVM = AdminLessonViewModel() // Use AdminLessonViewModel here
-    
-    @State private var adminActionAlertInfo: AlertInfo? // Make sure AlertInfo is defined
+    @State private var adminActionAlertInfo: AlertInfo? 
     
     @State private var showAuthSheet = false
     @State private var isRegistering = false
@@ -72,7 +71,6 @@ struct MainPageView: View {
                                         
                                         NavigationLink {
                                             AdminCreateLessonView(
-                                                token: authVM.firebaseAuthUser?.uid ?? "admin_token_error_direct_create",
                                                 onLessonCreated: {
                                                     self.adminActionAlertInfo = AlertInfo(message: "Lesson created successfully!", isError: false)
                                                 },

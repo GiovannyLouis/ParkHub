@@ -11,9 +11,9 @@ struct AlertInfo: Identifiable {
 
 struct AdminManageLessonView: View {
     @EnvironmentObject var authVM: AuthViewModel
+    @EnvironmentObject var viewModel: AdminLessonViewModel
+    
     @Environment(\.dismiss) var dismiss
-
-    @StateObject var viewModel = AdminLessonViewModel() // Combined ViewModel
 
     let token: String
     var onLogout: () -> Void
@@ -117,7 +117,6 @@ struct AdminManageLessonView: View {
 
                 NavigationLink(
                     destination: AdminCreateLessonView(
-                        token: token,
                         onLessonCreated: {
                             showCreateLessonView = false
                             alertInfo = AlertInfo(message: "Lesson created successfully!", isError: false)
@@ -228,5 +227,6 @@ struct AdminLessonCard: View {
             }
         )
         .environmentObject(AuthViewModel())
+        .environmentObject(AdminLessonViewModel())
     }
 }

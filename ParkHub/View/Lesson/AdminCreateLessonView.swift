@@ -13,7 +13,6 @@ struct AdminCreateLessonView: View {
     @State private var descriptionText: String = ""
     @State private var contentText: String = ""
 
-    let token: String
     var onLessonCreated: () -> Void
     var onShowError: (String) -> Void
 
@@ -104,8 +103,6 @@ struct AdminCreateLessonView: View {
                 onLessonCreated()
                 resetFormFields()
                 viewModel.resetCreationStatusFlags()
-                // Optionally dismiss here if desired
-                // dismiss()
             }
         }
         .onChange(of: viewModel.creationError) { error in
@@ -130,7 +127,6 @@ struct AdminCreateLessonView: View {
             return
         }
 
-        // id is empty string here, so Firebase generates key automatically or handle accordingly
         let newLesson = Lesson(
             id: "",
             title: trimmedTitle,
@@ -153,7 +149,6 @@ struct AdminCreateLessonView: View {
 
     NavigationView {
         AdminCreateLessonView(
-            token: "dummy_admin_token_for_preview",
             onLessonCreated: { print("Preview: Lesson created!") },
             onShowError: { error in print("Preview Error: \(error)") }
         )
