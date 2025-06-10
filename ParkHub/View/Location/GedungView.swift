@@ -1,167 +1,155 @@
-//
-//  GedungView.swift
-//  ParkHub
-//
-//  Created by student on 30/05/25.
-//
-
 import SwiftUI
 
 struct GedungView: View {
     @EnvironmentObject var viewModel: LocationViewModel
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    private var isIpad: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            TopAppBar() // Replace with your actual TopAppBar
+            TopAppBar()
 
-            ZStack { // Main Content Box
-                Color.white // Background
+            ZStack {
+                Color.white
 
                 if viewModel.gedungLocations.isEmpty {
                     ProgressView()
                 } else {
-                    // Floor Display and Navigation Row
-                    // Original Row had .fillMaxSize().padding(16.dp), horizontalArrangement = Center, verticalAlignment = CenterVertically
-                    // We'll use a GeometryReader to help with vertical centering if needed, or rely on Spacer for simpler cases.
-                    // For now, let's use Spacers within the HStack for centering.
-                    HStack(alignment: .center, spacing: 0) { // Main Row for Left, Center, Right
-                        // --- Left Section ---
-                        VStack(alignment: .trailing) { // Alignment matches Compose
-                            if viewModel.isCurrentGedungFloorEven { // Even Floor Left
+                    HStack(alignment: .center, spacing: 0) {
+                        VStack(alignment: .trailing) {
+                            if viewModel.isCurrentGedungFloorEven {
                                 ZStack {
                                     Image(systemName: "chevron.right.2")
                                         .resizable()
                                         .scaledToFit()
-                                        .frame(width: 24, height: 24)
-                                        .foregroundColor(.black) // Ensure icon is visible on gray background
+                                        .frame(width: isIpad ? 36 : 24, height: isIpad ? 36 : 24)
+                                        .foregroundColor(.black)
                                 }
-                                .frame(width: 64, height: 40)
+                                .frame(width: isIpad ? 96 : 64, height: isIpad ? 60 : 40)
                                 .background(Color.gray.opacity(0.5))
                                 ForEach(viewModel.evenFloorLeftSectionSpots) { location in
-                                    HorizGedungView(color: viewModel.getColor(for: location))
+                                    HorizGedungView(color: viewModel.getColor(for: location), isIpad: isIpad)
                                 }
                                 ZStack {
                                     Image(systemName: "chevron.left.2")
                                         .resizable()
                                         .scaledToFit()
-                                        .frame(width: 24, height: 24)
-                                        .foregroundColor(.black) // Ensure icon is visible on gray background
+                                        .frame(width: isIpad ? 36 : 24, height: isIpad ? 36 : 24)
+                                        .foregroundColor(.black)
                                 }
-                                .frame(width: 64, height: 40)
+                                .frame(width: isIpad ? 96 : 64, height: isIpad ? 60 : 40)
                                 .background(Color.gray.opacity(0.5))
-                            } else { // Odd Floor Left
-                                VStack(alignment: .trailing, spacing: 0) { // Explicit VStack for alignment
+                            } else {
+                                VStack(alignment: .trailing, spacing: 0) {
                                     ForEach(viewModel.oddFloorLeftSectionSpots) { location in
-                                        HorizGedungView(color: viewModel.getColor(for: location))
+                                        HorizGedungView(color: viewModel.getColor(for: location), isIpad: isIpad)
                                     }
                                 }
                             }
                         }
-                        .frame(width: 64)
-                        // The alignment of the VStack itself within the HStack will be .center by default.
-                        // If specific alignment like .top or .bottom is needed for the whole column, adjust the HStack's alignment.
+                        .frame(width: isIpad ? 96 : 64)
 
-                        // --- Center Section (Floor Selector) ---
                         VStack(spacing: 0) {
-                            Image(systemName: "arrowtriangle.up.fill") // baseline_arrow_drop_up_24
+                            Image(systemName: "arrowtriangle.up.fill")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 80, height: 80) // Adjusted from 128dp for better proportion with text
+                                .frame(width: isIpad ? 120 : 80, height: isIpad ? 120 : 80)
                                 .foregroundColor(.gray)
-                                .padding(.bottom, 10)
+                                .padding(.bottom, isIpad ? 15 : 10)
                                 .onTapGesture {
                                     viewModel.incrementGedungFloor()
                                 }
 
                             Text("P\(viewModel.currentGedungFloor)")
-                                .font(.system(size: 48)) // Adjusted from 80sp
-                                .fontWeight(.medium) // .W500
-                                .frame(width: 100)
+                                .font(.system(size: isIpad ? 72 : 48))
+                                .fontWeight(.medium)
+                                .frame(width: isIpad ? 150 : 100)
 
-                            Image(systemName: "arrowtriangle.down.fill") // baseline_arrow_drop_down_24
+                            Image(systemName: "arrowtriangle.down.fill")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 80, height: 80) // Adjusted
+                                .frame(width: isIpad ? 120 : 80, height: isIpad ? 120 : 80)
                                 .foregroundColor(.gray)
-                                .padding(.top, 10)
+                                .padding(.top, isIpad ? 15 : 10)
                                 .onTapGesture {
                                     viewModel.decrementGedungFloor()
                                 }
                         }
-                        .padding(.horizontal, 64) // Adjusted from 48dp
+                        .padding(.horizontal, isIpad ? 96 : 64)
 
-                        // --- Right Section ---
-                        VStack(alignment: .leading) { // Default leading alignment for VStacks
-                            if viewModel.isCurrentGedungFloorEven { // Even Floor Right
+                        VStack(alignment: .leading) {
+                            if viewModel.isCurrentGedungFloorEven {
                                 ForEach(viewModel.evenFloorRightSectionSpotsTop) { location in
-                                    HorizGedungView(color: viewModel.getColor(for: location))
+                                    HorizGedungView(color: viewModel.getColor(for: location), isIpad: isIpad)
                                 }
-                                ZStack { // Station Icon Box
-                                    Image(systemName: "figure.walk.motion") // baseline_transfer_within_a_station_24
+                                ZStack {
+                                    Image(systemName: "figure.walk.motion")
                                         .resizable()
                                         .scaledToFit()
-                                        .frame(width: 32, height: 32)
-                                        .foregroundColor(.black) // Ensure icon is visible
+                                        .frame(width: isIpad ? 48 : 32, height: isIpad ? 48 : 32)
+                                        .foregroundColor(.black)
                                 }
-                                .frame(width: 40, height: 84)
-                                .background(Color.cyan) // Color.Cyan
+                                .frame(width: isIpad ? 60 : 40, height: isIpad ? 126 : 84)
+                                .background(Color.cyan)
 
                                 ForEach(viewModel.evenFloorRightSectionSpotsBottom) { location in
-                                    HorizGedungView(color: viewModel.getColor(for: location))
+                                    HorizGedungView(color: viewModel.getColor(for: location), isIpad: isIpad)
                                 }
-                            } else { // Odd Floor Right
+                            } else {
                                 ZStack {
                                     Image(systemName: "chevron.right.2")
                                         .resizable()
                                         .scaledToFit()
-                                        .frame(width: 24, height: 24)
-                                        .foregroundColor(.black) // Ensure icon is visible on gray background
+                                        .frame(width: isIpad ? 36 : 24, height: isIpad ? 36 : 24)
+                                        .foregroundColor(.black)
                                 }
-                                .frame(width: 64, height: 40)
+                                .frame(width: isIpad ? 96 : 64, height: isIpad ? 60 : 40)
                                 .background(Color.gray.opacity(0.5))
                                 ForEach(viewModel.oddFloorRightSectionSpots) { location in
-                                    HorizGedungView(color: viewModel.getColor(for: location))
+                                    HorizGedungView(color: viewModel.getColor(for: location), isIpad: isIpad)
                                 }
                                 ZStack {
                                     Image(systemName: "chevron.left.2")
                                         .resizable()
                                         .scaledToFit()
-                                        .frame(width: 24, height: 24)
-                                        .foregroundColor(.black) // Ensure icon is visible on gray background
+                                        .frame(width: isIpad ? 36 : 24, height: isIpad ? 36 : 24)
+                                        .foregroundColor(.black)
                                 }
-                                .frame(width: 64, height: 40)
+                                .frame(width: isIpad ? 96 : 64, height: isIpad ? 60 : 40)
                                 .background(Color.gray.opacity(0.5))
                             }
                         }
-                        .frame(width: 64)
+                        .frame(width: isIpad ? 96 : 64)
                     }
-                    .padding(16) // Corresponds to .padding(16.dp) on the main Row in Compose
-                    // The .fillMaxSize() on the Row and verticalAlignment = CenterVertically
-                    // means the HStack should try to center itself vertically.
-                    // If the content is shorter than the screen, outer Spacers or GeometryReader might be needed.
-                    // For now, this structure should work well if content naturally fills or is centered by the HStack's parent ZStack.
+                    .padding(isIpad ? 24 : 16)
                 }
             }
-            .layoutPriority(1) // To take available vertical space
+            .layoutPriority(1)
 
-            BotAppBar() // Replace with your actual BotAppBar
+            BotAppBar()
         }
-        .edgesIgnoringSafeArea(.bottom) // If BotAppBar is meant to be at the very bottom
+        .edgesIgnoringSafeArea(.bottom)
     }
 }
 
 struct HorizGedungView: View {
     let color: Color
-    // let name: String // Original Compose had 'num' but didn't display it
+    let isIpad: Bool
+
+    private var spotWidth: CGFloat { isIpad ? 60 : 40 }
+    private var spotHeight: CGFloat { isIpad ? 30 : 20 }
+    private var spacerHeight: CGFloat { isIpad ? 6 : 4 }
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer().frame(height: 4)
+            Spacer().frame(height: spacerHeight)
             Rectangle()
                 .fill(color)
-                .frame(width: 40, height: 20)
-            // Text(name, font: .system(size: 4)) // If you want to display it
-            Spacer().frame(height: 4)
+                .frame(width: spotWidth, height: spotHeight)
+            Spacer().frame(height: spacerHeight)
         }
     }
 }
