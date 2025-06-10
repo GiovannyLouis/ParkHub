@@ -9,7 +9,7 @@ struct MainPageView: View {
     @State private var adminActionAlertInfo: AlertInfo?
     @State private var showAuthSheet = false
     @State private var isRegistering = false
-    @State private var showingSubmitReportSheet = false
+
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
@@ -107,9 +107,13 @@ struct MainPageView: View {
                                                [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())] :
                                                [GridItem(.flexible()), GridItem(.flexible())],
                                                spacing: 20) {
-                                        Button {
-                                            reportVM.clearInputFields()
-                                            showingSubmitReportSheet = true
+                                        NavigationLink {
+                                            submitReportView()
+                                                .navigationTitle("Create Report")
+                                                .navigationBarTitleDisplayMode(.inline)
+                                                .onAppear {
+                                                    reportVM.clearInputFields()
+                                                }
                                         } label: {
                                             HomeGridCard(
                                                 title: "Create Report",
@@ -216,11 +220,7 @@ struct MainPageView: View {
                         .environmentObject(authVM)
                 }
             }
-            .sheet(isPresented: $showingSubmitReportSheet) {
-                NavigationView {
-                    submitReportView()
-                }
-            }
+            
             .onChange(of: authVM.isSignedIn) { newIsSignedInStatus in
                 if newIsSignedInStatus {
                     if showAuthSheet {
