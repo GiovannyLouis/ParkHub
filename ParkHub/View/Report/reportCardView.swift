@@ -19,9 +19,6 @@ struct reportCardView: View {
                     .font(.headline)
                 
                 Spacer()
-                
-                // Show delete button only if the report belongs to the current user
-                
             }
             
             // --- Static Placeholder Image Section ---
@@ -48,24 +45,33 @@ struct reportCardView: View {
                 .lineLimit(3)
                 .multilineTextAlignment(.leading)
 
-            // Timestamp
-            Text("Reported: \(Date(timeIntervalSince1970: report.timestamp / 1000), style: .relative) ago")
-                .font(.caption)
-                .foregroundColor(.gray)
-                .padding(.top, 2)
-            if report.userId == currentUserId && !report.userId.isEmpty {
-                Button {
-                    // Consider adding an alert here for delete confirmation
-                    // Example: reportViewModel.showDeleteConfirmationAlert(for: report)
-                    Task {
-                        await reportViewModel.deleteReport(report: report, currentUserId: currentUserId ?? "")
+            // Bottom section with timestamp and delete button
+            HStack {
+                // Timestamp
+                Text("Reported: \(Date(timeIntervalSince1970: report.timestamp / 1000), style: .relative) ago")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                
+                Spacer()
+                
+                // Show delete button only if the report belongs to the current user
+                if report.userId == currentUserId && !report.userId.isEmpty {
+                    Button {
+                        // Consider adding an alert here for delete confirmation
+                        // Example: reportViewModel.showDeleteConfirmationAlert(for: report)
+                        Task {
+                            await reportViewModel.deleteReport(report: report, currentUserId: currentUserId ?? "")
+                        }
                     }
-                } label: {
-                    Image(systemName: "trash.fill")
-                        .foregroundColor(.red)
+                    
+                    label: {
+                        Image(systemName: "trash.fill")
+                            .foregroundColor(.red)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
+            .padding(.top, 2)
         }
         .padding()
         .background(Color(.systemBackground)) // Adapts to light/dark mode
