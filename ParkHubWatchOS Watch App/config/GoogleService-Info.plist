@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyBW2eQ60qaK9gq9WzEI6Cybf733B38UCOA</string>
+	<key>GCM_SENDER_ID</key>
+	<string>79454083847</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>IMTGambit.ParkHub</string>
+	<key>PROJECT_ID</key>
+	<string>parkhub-d9c0e</string>
+	<key>STORAGE_BUCKET</key>
+	<string>parkhub-d9c0e.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:79454083847:ios:f3cef7096e4d9032c2c3a2</string>
+	<key>DATABASE_URL</key>
+	<string>https://parkhub-d9c0e-default-rtdb.asia-southeast1.firebasedatabase.app</string>
+</dict>
+</plist>
