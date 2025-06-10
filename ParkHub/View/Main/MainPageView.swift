@@ -4,9 +4,7 @@ struct MainPageView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @EnvironmentObject var reportVM: ReportViewModel // For submitting reports
 
-    @EnvironmentObject var bukitVM: BukitViewModel
-    @EnvironmentObject var lapanganVM: LapanganViewModel
-    @EnvironmentObject var gedungVM: GedungViewModel
+    @EnvironmentObject var locationVM: LocationViewModel
     
     @EnvironmentObject var adminLessonVM: AdminLessonViewModel
     
@@ -388,9 +386,7 @@ struct AuthSheetContainerView: View {
     MainPageView()
         .environmentObject(AuthViewModel())
         .environmentObject(ReportViewModel()) // Add ReportViewModel for preview
-        .environmentObject(BukitViewModel())
-        .environmentObject(LapanganViewModel())
-        .environmentObject(GedungViewModel())
+        .environmentObject(LocationViewModel())
         .environmentObject(ReportViewModel())
         .environmentObject(AdminLessonViewModel())
 }

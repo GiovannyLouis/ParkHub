@@ -10,9 +10,7 @@ import SwiftUI
 // --- Main Location Page View ---
 
 struct LocationView: View {
-    @EnvironmentObject var bukitVM: BukitViewModel
-    @EnvironmentObject var lapanganVM: LapanganViewModel
-    @EnvironmentObject var gedungVM: GedungViewModel
+    @EnvironmentObject var locationVM: LocationViewModel
     // In a real app with NavigationStack, you might not need to pass a controller
     // explicitly if NavigationLinks are self-contained.
     // For this translation, we'll embed it in a NavigationStack.
@@ -98,7 +96,5 @@ struct RectangleWithImageAndTextView: View {
 
 #Preview {
     LocationView()
-        .environmentObject(BukitViewModel())
-        .environmentObject(LapanganViewModel())
-        .environmentObject(GedungViewModel())
+        .environmentObject(LocationViewModel())
 }
