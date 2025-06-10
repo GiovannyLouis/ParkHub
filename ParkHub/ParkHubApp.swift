@@ -13,9 +13,7 @@ import FirebaseAppCheck
 struct ParkHubApp: App {
     @StateObject var authVM = AuthViewModel()
     @StateObject var reportViewModel = ReportViewModel()
-    @StateObject var bukitVM = BukitViewModel()
-    @StateObject var lapanganVM = LapanganViewModel()
-    @StateObject var gedungVM = GedungViewModel()
+    @StateObject var locationViewModel = LocationViewModel()
     @StateObject var lessonViewModel = LessonViewModel()
     @StateObject var adminLessonViewModel = AdminLessonViewModel()
 
@@ -35,9 +33,7 @@ struct ParkHubApp: App {
             MainPageView()
                 .environmentObject(authVM)
                 .environmentObject(reportViewModel)
-                .environmentObject(bukitVM)
-                .environmentObject(lapanganVM)
-                .environmentObject(gedungVM)
+                .environmentObject(locationViewModel)
                 .environmentObject(lessonViewModel)
                 .environmentObject(adminLessonViewModel)
 

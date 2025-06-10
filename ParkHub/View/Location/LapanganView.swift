@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct LapanganView: View {
-    @EnvironmentObject var viewModel: LapanganViewModel
+    @EnvironmentObject var viewModel: LocationViewModel
 
     var body: some View {
         VStack(spacing: 0) {
@@ -17,7 +17,7 @@ struct LapanganView: View {
             ZStack { // Content Area Box
                 Color.white // Background
 
-                if viewModel.locations.isEmpty {
+                if viewModel.lapanganLocations.isEmpty {
                     ProgressView() // Loading state
                 } else {
                     // The original Compose Column had .fillMaxSize() and verticalArrangement = Arrangement.Center
@@ -258,5 +258,5 @@ struct HorizLapanganView: View {
 
 #Preview {
     LapanganView()
-        .environmentObject(LapanganViewModel())
+        .environmentObject(LocationViewModel())
 }
