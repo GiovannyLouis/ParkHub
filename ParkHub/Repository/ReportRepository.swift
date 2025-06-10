@@ -10,7 +10,7 @@ import Foundation
 import FirebaseDatabase
 import FirebaseAuth
 
-final class ReportRepository {
+class ReportRepository {
     private var dbRef: DatabaseReference
     private var reportsRef: DatabaseReference
     private var reportsHandle: DatabaseHandle?

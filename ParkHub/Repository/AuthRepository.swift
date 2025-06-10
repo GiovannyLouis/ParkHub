@@ -5,7 +5,7 @@
 import Foundation
 import FirebaseAuth
 
-final class AuthRepository {
+class AuthRepository {
     
     func signIn(email: String, password: String) async throws -> FirebaseAuth.User {
         let result = try await Auth.auth().signIn(withEmail: email, password: password)
@@ -56,5 +56,40 @@ final class AuthRepository {
             }
         }
         return error.localizedDescription
+    }
+}
+
+class MockAuthRepository: AuthRepository {
+    var mockUser: FirebaseAuth.User?
+    var shouldThrowError = false
+    var errorToThrow: Error = NSError(domain: "TestError", code: -1)
+
+    override func signIn(email: String, password: String) async throws -> FirebaseAuth.User {
+        if shouldThrowError {
+            throw errorToThrow
+        }
+        return mockUser!
+    }
+
+    override func signUp(username: String, email: String, password: String) async throws -> FirebaseAuth.User {
+        if shouldThrowError {
+            throw errorToThrow
+        }
+        return mockUser!
+    }
+
+    override func signOut() throws {
+        if shouldThrowError {
+            throw errorToThrow
+        }
+    }
+
+    override func addAuthStateDidChangeListener(_ listener: @escaping (FirebaseAuth.User?) -> Void) -> AuthStateDidChangeListenerHandle {
+        listener(mockUser)
+        return NSObject() // Dummy handle
+    }
+
+    override func removeAuthStateDidChangeListener(_ handle: AuthStateDidChangeListenerHandle) {
+        // No-op for testing
     }
 }

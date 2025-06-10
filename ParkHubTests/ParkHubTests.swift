@@ -138,3 +138,149 @@ final class LessonViewModelTests: XCTestCase {
         wait(for: [expectation], timeout: 1.0)
     }
 }
+
+
+final class ReportViewModelTests: XCTestCase {
+
+    class MockReportRepository: ReportRepository {
+        var shouldFail = false
+        var reports: [Report] = []
+
+        override func fetchReports(onSuccess: @escaping ([Report]) -> Void, onError: @escaping (String) -> Void) {
+            if shouldFail {
+                onError("Mock fetch failed")
+            } else {
+                onSuccess(reports)
+            }
+        }
+
+        override func createReport(_ report: Report) async throws {
+            if shouldFail {
+                throw NSError(domain: "Mock", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock create failed"])
+            }
+        }
+
+        override func deleteReport(reportId: String) async throws {
+            if shouldFail {
+                throw NSError(domain: "Mock", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock delete failed"])
+            }
+        }
+    }
+
+    func testFetchReportsSuccess() {
+        let mockRepo = MockReportRepository()
+        mockRepo.reports = [
+            Report(userId: "123", username: "John", title: "Test", description: "Some issue")
+        ]
+
+        let viewModel = ReportViewModel(reportRepository: mockRepo)
+        
+
+        let expectation = XCTestExpectation(description: "Fetch reports succeeds")
+
+        viewModel.fetchReports()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            XCTAssertEqual(viewModel.reports.count, 1)
+            XCTAssertNil(viewModel.errorMessage)
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 1)
+    }
+
+    func testFetchReportsFailure() {
+        let mockRepo = MockReportRepository()
+        mockRepo.shouldFail = true
+
+        let viewModel = ReportViewModel()
+        viewModel.reportRepository = mockRepo
+
+        let expectation = XCTestExpectation(description: "Fetch reports fails")
+
+        viewModel.fetchReports()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            XCTAssertTrue(viewModel.reports.isEmpty)
+            XCTAssertNotNil(viewModel.errorMessage)
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 1)
+    }
+
+    func testCreateReportSuccess() async {
+        let mockRepo = MockReportRepository()
+        let viewModel = ReportViewModel()
+        viewModel.reportRepository = mockRepo
+
+        viewModel.reportTitle = "Title"
+        viewModel.reportDescription = "Description"
+
+        let success = await viewModel.createReport(currentUserId: "123", currentUsername: "John")
+        XCTAssertTrue(success)
+        XCTAssertNil(viewModel.errorMessage)
+        XCTAssertEqual(viewModel.reportTitle, "")
+        XCTAssertEqual(viewModel.reportDescription, "")
+    }
+
+    func testCreateReportFailure_EmptyFields() async {
+        let viewModel = ReportViewModel()
+        viewModel.reportTitle = ""
+        viewModel.reportDescription = ""
+
+        let success = await viewModel.createReport(currentUserId: "123", currentUsername: "John")
+        XCTAssertFalse(success)
+        XCTAssertEqual(viewModel.errorMessage, "Title and description cannot be empty.")
+    }
+
+    func testCreateReportFailure_RepoThrows() async {
+        let mockRepo = MockReportRepository()
+        mockRepo.shouldFail = true
+
+        let viewModel = ReportViewModel()
+        viewModel.reportRepository = mockRepo
+
+        viewModel.reportTitle = "Test"
+        viewModel.reportDescription = "Description"
+
+        let success = await viewModel.createReport(currentUserId: "123", currentUsername: "John")
+        XCTAssertFalse(success)
+        XCTAssertNotNil(viewModel.errorMessage)
+    }
+
+    func testDeleteReportSuccess() async {
+        let mockRepo = MockReportRepository()
+        let viewModel = ReportViewModel()
+        viewModel.reportRepository = mockRepo
+
+        let report = Report(userId: "123", username: "John", title: "Issue", description: "Desc")
+        await viewModel.deleteReport(report: report, currentUserId: "123")
+
+        XCTAssertNil(viewModel.errorMessage)
+    }
+
+    func testDeleteReportFailure_NotOwner() async {
+        let viewModel = ReportViewModel()
+
+        let report = Report(userId: "otherUser", username: "Jane", title: "Wrong", description: "Oops")
+
+        await viewModel.deleteReport(report: report, currentUserId: "123")
+        XCTAssertEqual(viewModel.errorMessage, "You can only delete your own reports.")
+    }
+
+    func testDeleteReportFailure_RepoThrows() async {
+        let mockRepo = MockReportRepository()
+        mockRepo.shouldFail = true
+
+        let viewModel = ReportViewModel()
+        viewModel.reportRepository = mockRepo
+
+        let report = Report(userId: "123", username: "John", title: "Fail", description: "Oops")
+        await viewModel.deleteReport(report: report, currentUserId: "123")
+
+        XCTAssertNotNil(viewModel.errorMessage)
+    }
+}
+
+

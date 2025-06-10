@@ -4,7 +4,6 @@
 
 import Foundation
 
-@MainActor
 class ReportViewModel: ObservableObject {
     @Published var reports: [Report] = []
     @Published var isLoading: Bool = false
@@ -13,11 +12,12 @@ class ReportViewModel: ObservableObject {
     @Published var reportTitle: String = ""
     @Published var reportDescription: String = ""
 
-    private let reportRepository = ReportRepository()
+    var reportRepository = ReportRepository()
 
-    init() {
-        fetchReports()
-    }
+    init(reportRepository: ReportRepository = ReportRepository()) {
+            self.reportRepository = reportRepository
+            fetchReports()
+        }
 
     deinit {
         reportRepository.removeObservers()

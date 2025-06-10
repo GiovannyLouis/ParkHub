@@ -5,7 +5,6 @@
 import Foundation
 import FirebaseAuth
 
-@MainActor
 class AuthViewModel: ObservableObject {
     @Published var inputUser: User = User()
     @Published var firebaseAuthUser: FirebaseAuth.User?
@@ -13,8 +12,8 @@ class AuthViewModel: ObservableObject {
     @Published var authError: String?
     @Published var isLoading: Bool = false
 
-    private var authStateHandler: AuthStateDidChangeListenerHandle?
-    private let authRepository = AuthRepository()
+    var authStateHandler: AuthStateDidChangeListenerHandle?
+    var authRepository = AuthRepository()
 
     init() {
         listenToAuthState()
