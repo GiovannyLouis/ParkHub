@@ -4,41 +4,70 @@ import SwiftUI
 
 class LocationViewModel: ObservableObject {
 
-    // MARK: - Published Properties
-    
-    // Data from BukitViewModel
+    // MARK: - Published Properties for Data
     @Published var bukitLocations: [Location] = []
-    
-    // Data from LapanganViewModel
     @Published var lapanganLocations: [Location] = []
-    
-    // Data and State from GedungViewModel
     @Published var gedungLocations: [Location] = []
+    
+    // MARK: - Published Properties for UI State
     @Published var currentGedungFloor: Int = 3
-
-    // MARK: - Firebase References and Handles
+    @Published var errorMessage: String?
     
-    private let bukitRef = Database.database().reference().child("locations/bukit")
-    private var bukitHandle: DatabaseHandle?
-    
-    private let lapanganRef = Database.database().reference().child("locations/lapangan")
-    private var lapanganHandle: DatabaseHandle?
-    
-    private let gedungRef = Database.database().reference().child("locations/gedung")
-    private var gedungHandle: DatabaseHandle?
+    // MARK: - Dependencies
+    private let repository: LocationRepository
     
     // MARK: - Lifecycle
     
-    init() {
-        startListeningForBukitLocations()
-        startListeningForLapanganLocations()
-        startListeningForGedungLocations()
+    init(repository: LocationRepository = LocationRepository()) {
+        self.repository = repository
+        startObservingLocations() // Start observing on initialization
     }
     
     deinit {
-        stopListeningForBukitLocations()
-        stopListeningForLapanganLocations()
-        stopListeningForGedungLocations()
+        repository.removeAllObservers()
+    }
+    
+    // MARK: - Data Fetching
+    
+    private func startObservingLocations() {
+        print("ViewModel is starting to observe all locations...")
+        self.errorMessage = nil
+
+        repository.observeBukitLocations(onUpdate: { [weak self] locations in
+            DispatchQueue.main.async {
+                self?.bukitLocations = locations
+                print("Successfully updated Bukit locations.")
+            }
+        }, onError: { [weak self] error in
+            DispatchQueue.main.async {
+                self?.errorMessage = "Failed to fetch Bukit locations: \(error.localizedDescription)"
+                print(self?.errorMessage ?? "")
+            }
+        })
+        
+        repository.observeLapanganLocations(onUpdate: { [weak self] locations in
+            DispatchQueue.main.async {
+                self?.lapanganLocations = locations
+                print("Successfully updated Lapangan locations.")
+            }
+        }, onError: { [weak self] error in
+            DispatchQueue.main.async {
+                self?.errorMessage = "Failed to fetch Lapangan locations: \(error.localizedDescription)"
+                print(self?.errorMessage ?? "")
+            }
+        })
+        
+        repository.observeGedungLocations(onUpdate: { [weak self] locations in
+            DispatchQueue.main.async {
+                self?.gedungLocations = locations
+                print("Successfully updated Gedung locations.")
+            }
+        }, onError: { [weak self] error in
+            DispatchQueue.main.async {
+                self?.errorMessage = "Failed to fetch Gedung locations: \(error.localizedDescription)"
+                print(self?.errorMessage ?? "")
+            }
+        })
     }
     
     // MARK: - Universal Helper
@@ -48,30 +77,6 @@ class LocationViewModel: ObservableObject {
     }
     
     // MARK: - BUKIT LOGIC
-    
-    private func startListeningForBukitLocations() {
-        stopListeningForBukitLocations()
-        print("Starting to listen for Bukit locations...")
-        bukitHandle = bukitRef.observe(.value, with: { [weak self] snapshot in
-            guard let self = self else { return }
-            do {
-                print("Received Bukit locations update.")
-                let bukitData = try snapshot.data(as: [Location?].self)
-                self.bukitLocations = bukitData.compactMap { $0 }
-            } catch {
-                print("Error decoding Bukit locations: \(error)")
-                self.bukitLocations = []
-            }
-        })
-    }
-
-    private func stopListeningForBukitLocations() {
-        if let handle = bukitHandle {
-            bukitRef.removeObserver(withHandle: handle)
-            bukitHandle = nil
-            print("Stopped listening for Bukit locations.")
-        }
-    }
     
     // Computed Properties for Bukit
     var vertiBukitLocations: [Location] {
@@ -85,30 +90,6 @@ class LocationViewModel: ObservableObject {
     }
     
     // MARK: - LAPANGAN LOGIC
-    
-    private func startListeningForLapanganLocations() {
-        stopListeningForLapanganLocations()
-        print("Starting to listen for Lapangan locations...")
-        lapanganHandle = lapanganRef.observe(.value, with: { [weak self] snapshot in
-            guard let self = self else { return }
-            do {
-                print("Received Lapangan locations update.")
-                let lapanganData = try snapshot.data(as: [Location].self)
-                self.lapanganLocations = lapanganData.sorted { $0.id < $1.id }
-            } catch {
-                print("Error decoding Lapangan locations: \(error)")
-                self.lapanganLocations = []
-            }
-        })
-    }
-    
-    private func stopListeningForLapanganLocations() {
-        if let handle = lapanganHandle {
-            lapanganRef.removeObserver(withHandle: handle)
-            lapanganHandle = nil
-            print("Stopped listening for Lapangan locations.")
-        }
-    }
     
     // Computed Properties for Lapangan
     var locations_260_273: [Location] {
@@ -166,31 +147,6 @@ class LocationViewModel: ObservableObject {
     
     private let minGedungFloor = 3
     private let maxGedungFloor = 14
-    
-    private func startListeningForGedungLocations() {
-        stopListeningForGedungLocations()
-        print("Starting to listen for Gedung locations...")
-        gedungHandle = gedungRef.observe(.value, with: { [weak self] snapshot in
-            guard let self = self else { return }
-            do {
-                print("Received Gedung locations update.")
-                let gedungDictionary = try snapshot.data(as: [String: Location].self)
-                let allGedungLocations = Array((gedungDictionary).values)
-                self.gedungLocations = allGedungLocations.sorted { $0.id < $1.id }
-            } catch {
-                print("Error decoding Gedung locations: \(error)")
-                self.gedungLocations = []
-            }
-        })
-    }
-    
-    private func stopListeningForGedungLocations() {
-        if let handle = gedungHandle {
-            gedungRef.removeObserver(withHandle: handle)
-            gedungHandle = nil
-            print("Stopped listening for Gedung locations.")
-        }
-    }
     
     // Methods for Gedung
     func incrementGedungFloor() {
