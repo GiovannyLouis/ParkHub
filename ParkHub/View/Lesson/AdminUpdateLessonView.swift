@@ -8,12 +8,13 @@ struct AdminUpdateLessonView: View {
     @EnvironmentObject var viewModel: AdminLessonViewModel
     @Environment(\.dismiss) var dismiss
 
+    // State for UI fields
     @State private var title: String = ""
     @State private var descriptionText: String = ""
     @State private var contentText: String = ""
-    @State private var originalUserId: String? = nil
-
-    @State private var isFetchingDetails: Bool = false
+    
+    // State for loading and lesson data
+    @State private var isFetchingDetails: Bool = true
 
     let lessonId: String
     var onLessonUpdated: () -> Void
@@ -26,13 +27,13 @@ struct AdminUpdateLessonView: View {
             ScrollView {
                 if isFetchingDetails {
                     ProgressView("Loading lesson details...")
-                        .progressViewStyle(CircularProgressViewStyle(tint: primaryOrange))
+                        .progressViewStyle(CircularProgressViewStyle(tint: .orange)) // Assuming primaryOrange
                         .padding(.top, 50)
                 } else {
+                    // The rest of your form UI...
                     VStack(alignment: .leading, spacing: 16) {
-                        Button(action: {
-                            dismiss()
-                        }) {
+                        // Back Button
+                        Button(action: { dismiss() }) {
                             HStack(spacing: 4) {
                                 Image(systemName: "chevron.left")
                                     .font(.system(size: 17, weight: .semibold))
@@ -40,7 +41,7 @@ struct AdminUpdateLessonView: View {
                                     .font(.system(size: 17))
                             }
                         }
-                        .foregroundColor(primaryOrange)
+                        .foregroundColor(.orange) // Assuming primaryOrange
                         .padding(.bottom, 10)
 
                         Text("Update Lesson")
@@ -53,21 +54,19 @@ struct AdminUpdateLessonView: View {
                             .foregroundColor(.gray)
                             .padding(.bottom, 10)
 
+                        // Form Fields
                         Group {
-                            Text("Title:")
-                                .font(.headline)
-                            TextField("Enter title here", text: $title)
+                            Text("Title:").font(.headline)
+                            TextField("Enter new title (optional)", text: $title)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .padding(.bottom, 5)
 
-                            Text("Description:")
-                                .font(.headline)
-                            TextField("Enter description here", text: $descriptionText)
+                            Text("Description:").font(.headline)
+                            TextField("Enter new description (optional)", text: $descriptionText)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .padding(.bottom, 5)
 
-                            Text("Content:")
-                                .font(.headline)
+                            Text("Content:").font(.headline)
                             TextEditor(text: $contentText)
                                 .frame(height: 150)
                                 .overlay(
@@ -84,6 +83,7 @@ struct AdminUpdateLessonView: View {
                                 .padding(.vertical, 5)
                         }
 
+                        // Update Button
                         Button(action: attemptUpdateLesson) {
                             if viewModel.isLoading {
                                 ProgressView()
@@ -97,82 +97,66 @@ struct AdminUpdateLessonView: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 56)
-                        .background(primaryOrange)
+                        .background(Color.orange) // Assuming primaryOrange
                         .cornerRadius(8)
-                        .disabled(viewModel.isLoading ||
-                                  title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-                                  descriptionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-                                  contentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .disabled(viewModel.isLoading || allFieldsAreEmpty)
                     }
                     .padding()
                 }
             }
             .background(Color(UIColor.systemGroupedBackground))
+            .onAppear(perform: loadLessonDetails) // This will now work correctly
+            .navigationBarHidden(true)
 
             BotAppBar()
         }
-        .task(id: lessonId) { // Automatically cancels if the view disappears or lessonId changes
-            await loadLessonDetails()
-        }
-//        .onAppear(perform: loadLessonDetailsAsync())
         .navigationBarHidden(true)
     }
     
-    private func loadLessonDetails() async {
-            print("AdminUpdateLessonView - loadLessonDetailsAsync called with lessonId: '\(lessonId)'")
-            guard !Task.isCancelled else {
-                print("AdminUpdateLessonView - Task cancelled before starting fetch.")
-                return
-            }
+    private var allFieldsAreEmpty: Bool {
+        title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        descriptionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        contentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 
-            isFetchingDetails = true
-            let result = await viewModel.fetchLessonDetails(lessonId: lessonId)
-
-            guard !Task.isCancelled else {
-                print("AdminUpdateLessonView - Task cancelled during fetch.")
-                isFetchingDetails = false
-                return
-            }
-
+    private func loadLessonDetails() {
+        // MODIFICATION: Add a guard to prevent fetching with an invalid ID.
+        guard !lessonId.isEmpty else {
             isFetchingDetails = false
-            switch result {
-            case .success(let lesson):
-                print("AdminUpdateLessonView - Successfully fetched lesson: \(lesson.title)")
-                title = lesson.title
-                descriptionText = lesson.desc
-                contentText = lesson.content
-                originalUserId = lesson.userId
-            case .failure(let error):
-                print("AdminUpdateLessonView - Failed to fetch lesson: \(error.localizedDescription)")
-                onShowError("Failed to load lesson details: \(error.localizedDescription)")
-            }
-        }
-
-
-    private func attemptUpdateLesson() {
-        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedDescription = descriptionText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedContent = contentText.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if trimmedTitle.isEmpty || trimmedDescription.isEmpty || trimmedContent.isEmpty {
-            onShowError("Title, Description, and Content are required.")
+            onShowError("An invalid lesson ID was provided.")
+            dismiss()
             return
         }
+        
+        isFetchingDetails = true
+        Task {
+            let result = await viewModel.fetchLessonDetails(lessonId: lessonId)
+            await MainActor.run {
+                isFetchingDetails = false
+                switch result {
+                case .success(let lesson):
+                    // Pre-fill the fields with existing data
+                    self.title = lesson.title
+                    self.descriptionText = lesson.desc
+                    self.contentText = lesson.content
+                case .failure(let error):
+                    onShowError("Failed to load lesson details: \(error.localizedDescription)")
+                    dismiss()
+                }
+            }
+        }
+    }
 
-        let userIdForUpdate = originalUserId ?? Auth.auth().currentUser?.uid
-
-        let updatedLesson = Lesson(
-            id: lessonId,
-            title: trimmedTitle,
-            desc: trimmedDescription,
-            content: trimmedContent,
-            userId: userIdForUpdate
-        )
-
-        viewModel.updateExistingLesson(updatedLesson,
+    private func attemptUpdateLesson() {
+        viewModel.updateExistingLesson(
+            lessonId: lessonId,
+            title: title,
+            desc: descriptionText,
+            content: contentText,
             onSuccess: {
                 onLessonUpdated()
                 viewModel.resetUpdateStatusFlags()
+                // No need to dismiss here, the parent view's binding will handle it.
             },
             onError: { errorMessage in
                 onShowError(errorMessage)
@@ -180,7 +164,6 @@ struct AdminUpdateLessonView: View {
         )
     }
 }
-
 #Preview {
 
     NavigationView {

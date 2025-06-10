@@ -17,6 +17,8 @@ struct ParkHubApp: App {
     @StateObject var lapanganVM = LapanganViewModel()
     @StateObject var gedungVM = GedungViewModel()
     @StateObject var lessonViewModel = LessonViewModel()
+    @StateObject var adminLessonViewModel = AdminLessonViewModel()
+
     
     init(){
         FirebaseApp.configure()
@@ -37,6 +39,8 @@ struct ParkHubApp: App {
                 .environmentObject(lapanganVM)
                 .environmentObject(gedungVM)
                 .environmentObject(lessonViewModel)
+                .environmentObject(adminLessonViewModel)
+
         }
     }
 }
