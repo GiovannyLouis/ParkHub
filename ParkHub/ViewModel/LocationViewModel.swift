@@ -197,6 +197,35 @@ class LocationViewModel: ObservableObject {
         guard !isCurrentGedungFloorEven, filteredGedungsForCurrentFloor.count == 39 else { return [] }
         return Array(filteredGedungsForCurrentFloor[21...38])
     }
+    
+    var availableBukitSpots: Int {
+            bukitLocations.filter { !$0.isFilled }.count
+        }
+        
+        /// The total number of parking spots in the Bukit area.
+        var totalBukitSpots: Int {
+            bukitLocations.count
+        }
+        
+        /// The number of available parking spots in the Lapangan area.
+        var availableLapanganSpots: Int {
+            lapanganLocations.filter { !$0.isFilled }.count
+        }
+        
+        /// The total number of parking spots in the Lapangan area.
+        var totalLapanganSpots: Int {
+            lapanganLocations.count
+        }
+        
+        /// The number of available parking spots in the Gedung area.
+        var availableGedungSpots: Int {
+            gedungLocations.filter { !$0.isFilled }.count
+        }
+        
+        /// The total number of parking spots in the Gedung area.
+        var totalGedungSpots: Int {
+            gedungLocations.count
+        }
 }
 
 //class BukitViewModel: ObservableObject {

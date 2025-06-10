@@ -39,6 +39,40 @@ struct MainPageView: View {
                                 }
                                 .padding(.top, 20)
                                 .padding(.horizontal)
+                                
+                                VStack(spacing: 16) {
+                                            HStack {
+                                                Text("Parking Availability")
+                                                    .font(.title2)
+                                                    .fontWeight(.semibold)
+                                                Spacer()
+                                            }
+                                            
+                                            VStack(spacing: 12) {
+                                                AvailabilityCard(
+                                                    title: "Gedung",
+                                                    availableCount: locationVM.availableGedungSpots,
+                                                    totalCount: locationVM.totalGedungSpots,
+                                                    icon: "building.2.fill",
+                                                    color: .blue
+                                                )
+                                                AvailabilityCard(
+                                                    title: "Lapangan",
+                                                    availableCount: locationVM.availableLapanganSpots,
+                                                    totalCount: locationVM.totalLapanganSpots,
+                                                    icon: "car.2.fill",
+                                                    color: .green
+                                                )
+                                                AvailabilityCard(
+                                                    title: "Bukit",
+                                                    availableCount: locationVM.availableBukitSpots,
+                                                    totalCount: locationVM.totalBukitSpots,
+                                                    icon: "mountain.2.fill",
+                                                    color: .orange
+                                                )
+                                            }
+                                        }
+                                        .padding(.horizontal)
 
                                 if isAdminUser {
                                     VStack(spacing: 20) {
@@ -220,7 +254,6 @@ struct MainPageView: View {
                         .environmentObject(authVM)
                 }
             }
-            
             .onChange(of: authVM.isSignedIn) { newIsSignedInStatus in
                 if newIsSignedInStatus {
                     if showAuthSheet {
@@ -352,6 +385,48 @@ struct AuthSheetContainerView: View {
             }
         }
         .interactiveDismissDisabled(authVM.isLoading)
+    }
+}
+
+
+struct AvailabilityCard: View {
+    let title: String
+    let availableCount: Int
+    let totalCount: Int
+    let icon: String
+    let color: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: icon)
+                    .font(.title2)
+                    .foregroundColor(color)
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                Spacer()
+            }
+
+            HStack(alignment: .lastTextBaseline) {
+                Text("\(availableCount)")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .foregroundColor(color)
+                Text(" / \(totalCount) spots")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.secondary)
+            }
+            
+            Text("Available")
+                .font(.footnote)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .background(Color(.systemGray6))
+        .cornerRadius(16)
     }
 }
 
