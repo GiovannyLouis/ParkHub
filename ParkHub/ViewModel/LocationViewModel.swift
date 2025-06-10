@@ -2,32 +2,46 @@ import Foundation
 import FirebaseDatabase
 import SwiftUI
 
-@MainActor
 class BukitViewModel: ObservableObject {
     @Published var locations: [Location] = []
-    private var bukitref: DatabaseReference
-    
+
+    private let bukitRef = Database.database().reference().child("locations/bukit")
+    private var databaseHandle: DatabaseHandle?
+
     init() {
-        self.bukitref = Database.database().reference().child("locations/bukit")
-        fetchLocations()
+        startListeningForBukitLocations()
     }
-    
-    func fetchLocations() {
-        bukitref.observe(.value) { snapshot in
-            guard let value = snapshot.value as? [String: Any] else {
-                self.locations = []
-                return
+
+    deinit {
+        stopListeningForBukitLocations()
+    }
+
+    func startListeningForBukitLocations() {
+        // Remove any existing listener
+        stopListeningForBukitLocations()
+
+        print("Starting to listen for Bukit locations...")
+        databaseHandle = bukitRef.observe(.value, with: { [weak self] snapshot in
+            guard let self = self else { return }
+
+            do {
+                print("Received Bukit locations update.")
+                let bukitData = try snapshot.data(as: [Location?].self)
+                self.locations = bukitData.compactMap { $0 }
+            } catch {
+                print("Error decoding Bukit locations: \(error)")
+                self.locations = [] // Clear data on error
             }
-            
-            self.locations = value.compactMap { (key, bukitData) in
-                guard let bukitDict = bukitData as? [String: Any],
-                      let jsonData = try? JSONSerialization.data(withJSONObject: bukitDict),
-                      let location = try? JSONDecoder().decode(Location.self, from: jsonData) else {
-                    return nil
-                }
-                
-                return location
-            }.sorted(by: { $0.id < $1.id })
+        }, withCancel: { error in
+            print("Database observer for Bukit was cancelled: \(error.localizedDescription)")
+        })
+    }
+
+    func stopListeningForBukitLocations() {
+        if let handle = databaseHandle {
+            bukitRef.removeObserver(withHandle: handle)
+            databaseHandle = nil
+            print("Stopped listening for Bukit locations.")
         }
     }
     
@@ -63,29 +77,43 @@ class BukitViewModel: ObservableObject {
 
 class LapanganViewModel: ObservableObject {
     @Published var locations: [Location] = []
-        
-    private var lapanganref: DatabaseReference
-    
+
+    private let lapanganRef = Database.database().reference().child("locations/lapangan")
+    private var databaseHandle: DatabaseHandle?
+
     init() {
-        self.lapanganref = Database.database().reference().child("locations/lapangan")
-        fetchLocations()
+        startListeningForLapanganLocations()
     }
     
-    func fetchLocations() {
-        lapanganref.observe(.value) { snapshot in
-            guard let value = snapshot.value as? [String: Any] else {
+    deinit {
+        stopListeningForLapanganLocations()
+    }
+
+    func startListeningForLapanganLocations() {
+        stopListeningForLapanganLocations()
+
+        print("Starting to listen for Lapangan locations...")
+        databaseHandle = lapanganRef.observe(.value, with: { [weak self] snapshot in
+            guard let self = self else { return }
+
+            do {
+                print("Received Lapangan locations update.")
+                let lapanganData = try snapshot.data(as: [Location].self)
+                self.locations = lapanganData.sorted { $0.id < $1.id }
+            } catch {
+                print("Error decoding Lapangan locations: \(error)")
                 self.locations = []
-                return
             }
-            
-            self.locations = value.compactMap { (key, lapanganData) in
-                guard let lapanganDict = lapanganData as? [String: Any],
-                      let jsonData = try? JSONSerialization.data(withJSONObject: lapanganDict),
-                      let location = try? JSONDecoder().decode(Location.self, from: jsonData) else {
-                    return nil
-                }
-                return location
-            }.sorted(by: { $0.id < $1.id })
+        }, withCancel: { error in
+            print("Database observer for Lapangan was cancelled: \(error.localizedDescription)")
+        })
+    }
+    
+    func stopListeningForLapanganLocations() {
+        if let handle = databaseHandle {
+            lapanganRef.removeObserver(withHandle: handle)
+            databaseHandle = nil
+            print("Stopped listening for Lapangan locations.")
         }
     }
     
@@ -178,31 +206,45 @@ class GedungViewModel: ObservableObject {
     @Published var locations: [Location] = []
     @Published var currentFloor: Int = 3
 
+    private let gedungRef = Database.database().reference().child("locations/gedung")
+    private var databaseHandle: DatabaseHandle?
     private let minFloor = 3
     private let maxFloor = 14
-    
-    private var gedungref: DatabaseReference
 
     init() {
-        self.gedungref = Database.database().reference().child("locations/gedung")
-        fetchLocations()
+        startListeningForGedungLocations()
+    }
+    
+    deinit {
+        stopListeningForGedungLocations()
     }
 
-    func fetchLocations() {
-        gedungref.observe(.value) { snapshot in
-            guard let value = snapshot.value as? [String: Any] else {
-                self.locations = []
-                return
-            }
+    func startListeningForGedungLocations() {
+        stopListeningForGedungLocations()
 
-            self.locations = value.compactMap { (key, gedungData) in
-                guard let gedungDict = gedungData as? [String: Any],
-                      let jsonData = try? JSONSerialization.data(withJSONObject: gedungDict),
-                      let location = try? JSONDecoder().decode(Location.self, from: jsonData) else {
-                    return nil
-                }
-                return location
-            }.sorted(by: { $0.id < $1.id })
+        print("Starting to listen for Gedung locations...")
+        databaseHandle = gedungRef.observe(.value, with: { [weak self] snapshot in
+            guard let self = self else { return }
+
+            do {
+                print("Received Gedung locations update.")
+                let gedungDictionary = try snapshot.data(as: [String: Location].self)
+                let allGedungLocations = Array((gedungDictionary).values)
+                self.locations = allGedungLocations.sorted { $0.id < $1.id }
+            } catch {
+                print("Error decoding Gedung locations: \(error)")
+                self.locations = []
+            }
+        }, withCancel: { error in
+            print("Database observer for Gedung was cancelled: \(error.localizedDescription)")
+        })
+    }
+    
+    func stopListeningForGedungLocations() {
+        if let handle = databaseHandle {
+            gedungRef.removeObserver(withHandle: handle)
+            databaseHandle = nil
+            print("Stopped listening for Gedung locations.")
         }
     }
 
