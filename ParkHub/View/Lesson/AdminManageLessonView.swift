@@ -17,12 +17,11 @@ struct AdminManageLessonView: View {
     let token: String
     var onLogout: () -> Void
 
-    @State private var showCreateLessonSheet = false
     @State private var lessonIdToUpdate: String? = nil
     @State private var alertInfo: AlertInfo?
+    @State private var navigateToCreateLesson = false
 
     var body: some View {
-        // Wrap in NavigationStack to use .navigationDestination
         NavigationStack {
             VStack(spacing: 0) {
                 TopAppBar()
@@ -38,12 +37,11 @@ struct AdminManageLessonView: View {
                                 Text("Back")
                                     .font(.system(size: 17))
                             }
-                            .foregroundColor(.orange) // Assuming primaryOrange
+                            .foregroundColor(.orange)
                         }
                         .padding([.leading, .top])
                         .padding(.bottom, 10)
 
-                        // Main Content
                         contentView
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -52,15 +50,32 @@ struct AdminManageLessonView: View {
                         viewModel.fetchAllLessons()
                     }
 
-                    // Floating Action Button
+                    NavigationLink(destination:
+                        AdminCreateLessonView(
+                            token: token,
+                            onLessonCreated: {
+                                alertInfo = AlertInfo(message: "Lesson created successfully!", isError: false)
+                                viewModel.fetchAllLessons()
+                            },
+                            onShowError: { errorMessage in
+                                alertInfo = AlertInfo(message: errorMessage, isError: true)
+                            }
+                        )
+                        .environmentObject(authVM)
+                        .environmentObject(viewModel),
+                        isActive: $navigateToCreateLesson
+                    ) {
+                        EmptyView()
+                    }
+
                     Button(action: {
-                        showCreateLessonSheet = true
+                        navigateToCreateLesson = true
                     }) {
                         Image(systemName: "plus")
                             .font(.system(size: 24, weight: .semibold))
                             .foregroundColor(.white)
                             .padding()
-                            .background(Color.orange) // Assuming primaryOrange
+                            .background(Color.orange)
                             .clipShape(Circle())
                             .shadow(radius: 5)
                     }
@@ -77,30 +92,12 @@ struct AdminManageLessonView: View {
                     dismissButton: .default(Text("OK"))
                 )
             }
-            // MODIFICATION 1: Use .sheet for creating lessons
-            .sheet(isPresented: $showCreateLessonSheet) {
-                AdminCreateLessonView(
-                    token: token,
-                    onLessonCreated: {
-                        showCreateLessonSheet = false
-                        alertInfo = AlertInfo(message: "Lesson created successfully!", isError: false)
-                        viewModel.fetchAllLessons()
-                    },
-                    onShowError: { errorMessage in
-                        alertInfo = AlertInfo(message: errorMessage, isError: true)
-                    }
-                )
-                .environmentObject(authVM)
-                .environmentObject(viewModel)
-            }
-            // MODIFICATION 2: Use .navigationDestination for updating lessons
             .navigationDestination(isPresented: Binding<Bool>(
                 get: { lessonIdToUpdate != nil },
                 set: { isActive in
                     if !isActive { lessonIdToUpdate = nil }
                 }
             )) {
-                // This destination is only built when lessonIdToUpdate is NOT nil
                 if let lessonId = lessonIdToUpdate {
                     AdminUpdateLessonView(
                         lessonId: lessonId,
@@ -125,7 +122,7 @@ struct AdminManageLessonView: View {
         if viewModel.isLoading && viewModel.lessons.isEmpty {
             Spacer()
             ProgressView("Loading lessons...")
-                .progressViewStyle(CircularProgressViewStyle(tint: .orange)) // Assuming primaryOrange
+                .progressViewStyle(CircularProgressViewStyle(tint: .orange))
                 .scaleEffect(1.5)
                 .frame(maxWidth: .infinity, alignment: .center)
             Spacer()
@@ -158,7 +155,6 @@ struct AdminManageLessonView: View {
                                 lessonId: lesson.id,
                                 onSuccess: {
                                     alertInfo = AlertInfo(message: "Lesson deleted successfully!", isError: false)
-                                    // The viewmodel listener will handle the UI update automatically
                                 },
                                 onError: { errorMessage in
                                     alertInfo = AlertInfo(message: errorMessage, isError: true)
@@ -177,6 +173,7 @@ struct AdminManageLessonView: View {
         }
     }
 }
+
 
 struct AdminLessonCard: View {
     let lesson: Lesson
