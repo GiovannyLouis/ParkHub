@@ -1,40 +1,13 @@
-// reportListView.swift
 import SwiftUI
 
 struct reportListView: View {
     @EnvironmentObject var reportVM: ReportViewModel
     @EnvironmentObject var authVM: AuthViewModel
-    @Environment(\.dismiss) var dismiss // <-- Added for back navigation
-
-    // Assuming TopAppBar and BotAppBar are defined elsewhere
-    // Assuming primaryOrange or a similar color constant is defined if used for the button
 
     var body: some View {
-        VStack(spacing: 0) { // No spacing between app bars and content
-            TopAppBar() // Your custom TopAppBar
-
-            // --- Custom Back Button ---
-            HStack {
-                Button(action: {
-                    dismiss() // Action to go back
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 17, weight: .semibold))
-                        Text("Back")
-                            .font(.system(size: 17))
-                    }
-                    .foregroundColor(.accentColor) // Using .accentColor for a generic theme-aware color
-                                                 // Or use your app's specific color like primaryOrange
-                }
-                Spacer() // Pushes the button to the leading edge
-            }
-            .padding([.leading, .top]) // Minimal padding
-            .padding(.bottom, 5)    // Small space below
-            // No explicit background added here to keep it minimal; it will inherit from parent or be transparent.
-
-            // Main content area
-            Group { // Group to apply frame and handle states
+        VStack(spacing: 0) {
+            TopAppBar()
+            Group {
                 if reportVM.isLoading && reportVM.reports.isEmpty {
                     ProgressView("Loading reports...")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -73,12 +46,11 @@ struct reportListView: View {
                     .padding()
                 } else {
                     ScrollView {
-                        // "Recent Reports" Title - can be here or in TopAppBar
                         Text("Recent Reports")
                             .font(.title2.bold())
                             .padding(.horizontal)
-                            .padding(.top, 10) // Add some top padding if title is here
-                            .frame(maxWidth: .infinity, alignment: .leading) // Align to leading
+                            .padding(.top, 10)
+                            .frame(maxWidth: .infinity, alignment: .leading)
 
                         LazyVStack(alignment: .center, spacing: 16) {
                             ForEach(reportVM.reports) { report in
@@ -87,24 +59,25 @@ struct reportListView: View {
                                     currentUserId: authVM.firebaseAuthUser?.uid,
                                     reportViewModel: reportVM
                                 )
-                                .padding(.horizontal) // Padding for each card
+                                .padding(.horizontal)
                             }
                         }
-                        .padding(.vertical) // Padding for the content within ScrollView
+                        .padding(.vertical)
                     }
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity) // Ensure Group takes available space
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            BotAppBar() // Your custom BotAppBar
+            BotAppBar()
         }
-        .navigationBarHidden(true) // Assuming TopAppBar handles navigation appearance
+        // REMOVE the custom back button and this:
+        // .navigationBarHidden(true)
+
         .onAppear {
-            // The listener in ReportViewModel's init should keep data updated.
-            // Explicitly fetching can be done if needed, e.g., for pull-to-refresh.
-            // reportVM.fetchReports()
             print("reportListView appeared. Reports count: \(reportVM.reports.count)")
         }
+
+        .navigationBarTitleDisplayMode(.inline) // Optional: makes title smaller
     }
 }
 
