@@ -1,73 +1,57 @@
-//
-//  is.swift
-//  ParkHub
-//
-//  Created by Axel Valerio Ertamto on 03/06/25.
-//
-
+// File: AdminUpdateLessonView.swift
 
 import SwiftUI
-import Firebase
 import FirebaseAuth
 
-// Assuming primaryOrange is defined
-// Assuming Lesson struct is defined
-/*
-struct Lesson: Identifiable, Hashable, Codable {
-    var id: String = UUID().uuidString
-    var title: String
-    var desc: String
-    var content: String
-    var imageUrl: String?
-    var userId: String?
-}
-*/
-
 struct AdminUpdateLessonView: View {
-    @EnvironmentObject var viewModel: AdminUpdateLessonViewModel
+    @EnvironmentObject var authVM: AuthViewModel
+    @EnvironmentObject var viewModel: AdminLessonViewModel
     @Environment(\.dismiss) var dismiss
 
     @State private var title: String = ""
     @State private var descriptionText: String = ""
     @State private var contentText: String = ""
-    @State private var originalImageUrl: String? = nil
     @State private var originalUserId: String? = nil
 
     @State private var isFetchingDetails: Bool = false
 
-    // Removed token from here
     let lessonId: String
     var onLessonUpdated: () -> Void
     var onShowError: (String) -> Void
 
     var body: some View {
         VStack(spacing: 0) {
-            // Top Bar
-            VStack {
-                HStack {
-                    Text("Update Lesson")
-                        .foregroundColor(.white)
-                        .font(.system(size: 24, weight: .semibold))
-                    Spacer()
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
-                .padding(.top, (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.windows.first?.safeAreaInsets.top ?? 0 + 20)
-            }
-            .frame(maxWidth: .infinity)
-            .background(primaryOrange)
-            .edgesIgnoringSafeArea(.top)
+            TopAppBar()
 
             ScrollView {
                 if isFetchingDetails {
                     ProgressView("Loading lesson details...")
-                        .padding()
+                        .progressViewStyle(CircularProgressViewStyle(tint: primaryOrange))
+                        .padding(.top, 50)
                 } else {
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("Lesson ID: \(lessonId)")
-                            .font(.system(size: 16))
-                            .foregroundColor(.gray)
+                        Button(action: {
+                            dismiss()
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 17, weight: .semibold))
+                                Text("Back")
+                                    .font(.system(size: 17))
+                            }
+                        }
+                        .foregroundColor(primaryOrange)
+                        .padding(.bottom, 10)
+
+                        Text("Update Lesson")
+                            .font(.system(size: 24, weight: .bold))
                             .padding(.bottom, 5)
+                            .frame(maxWidth: .infinity, alignment: .center)
+
+                        Text("Lesson ID: \(lessonId)")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                            .padding(.bottom, 10)
 
                         Group {
                             Text("Title:")
@@ -92,7 +76,7 @@ struct AdminUpdateLessonView: View {
                                 )
                                 .padding(.bottom, 5)
                         }
-                        
+
                         if let error = viewModel.updateError {
                             Text(error)
                                 .foregroundColor(.red)
@@ -115,34 +99,55 @@ struct AdminUpdateLessonView: View {
                         .frame(height: 56)
                         .background(primaryOrange)
                         .cornerRadius(8)
-                        .disabled(viewModel.isLoading || title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || descriptionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || contentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .disabled(viewModel.isLoading ||
+                                  title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                                  descriptionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                                  contentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
                     .padding()
                 }
             }
             .background(Color(UIColor.systemGroupedBackground))
+
+            BotAppBar()
         }
-        .onAppear(perform: loadLessonDetails)
+        .task(id: lessonId) { // Automatically cancels if the view disappears or lessonId changes
+            await loadLessonDetails()
+        }
+//        .onAppear(perform: loadLessonDetailsAsync())
         .navigationBarHidden(true)
     }
+    
+    private func loadLessonDetails() async {
+            print("AdminUpdateLessonView - loadLessonDetailsAsync called with lessonId: '\(lessonId)'")
+            guard !Task.isCancelled else {
+                print("AdminUpdateLessonView - Task cancelled before starting fetch.")
+                return
+            }
 
-    private func loadLessonDetails() {
-        isFetchingDetails = true
-        // No token passed to VM method
-        viewModel.fetchLessonDetails(lessonId: lessonId) { result in
+            isFetchingDetails = true
+            let result = await viewModel.fetchLessonDetails(lessonId: lessonId)
+
+            guard !Task.isCancelled else {
+                print("AdminUpdateLessonView - Task cancelled during fetch.")
+                isFetchingDetails = false
+                return
+            }
+
             isFetchingDetails = false
             switch result {
             case .success(let lesson):
-                self.title = lesson.title
-                self.descriptionText = lesson.desc
-                self.contentText = lesson.content
-                self.originalImageUrl = lesson.imageUrl
-                self.originalUserId = lesson.userId
+                print("AdminUpdateLessonView - Successfully fetched lesson: \(lesson.title)")
+                title = lesson.title
+                descriptionText = lesson.desc
+                contentText = lesson.content
+                originalUserId = lesson.userId
             case .failure(let error):
+                print("AdminUpdateLessonView - Failed to fetch lesson: \(error.localizedDescription)")
                 onShowError("Failed to load lesson details: \(error.localizedDescription)")
             }
         }
-    }
+
 
     private func attemptUpdateLesson() {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -153,31 +158,21 @@ struct AdminUpdateLessonView: View {
             onShowError("Title, Description, and Content are required.")
             return
         }
-        
-        let userIdForUpdate: String?
-        if let fetchedUserId = self.originalUserId {
-            userIdForUpdate = fetchedUserId
-        } else {
-            // This logic might need refinement based on whether an admin is updating
-            // someone else's lesson or if userId should always be the current admin.
-            // For now, it mirrors the previous logic but without a token.
-            userIdForUpdate = Auth.auth().currentUser?.uid
-        }
+
+        let userIdForUpdate = originalUserId ?? Auth.auth().currentUser?.uid
 
         let updatedLesson = Lesson(
             id: lessonId,
             title: trimmedTitle,
             desc: trimmedDescription,
             content: trimmedContent,
-            imageUrl: originalImageUrl,
             userId: userIdForUpdate
         )
-        
-        // No token passed to VM method
+
         viewModel.updateExistingLesson(updatedLesson,
             onSuccess: {
                 onLessonUpdated()
-                viewModel.resetStatusFlags()
+                viewModel.resetUpdateStatusFlags()
             },
             onError: { errorMessage in
                 onShowError(errorMessage)
@@ -186,18 +181,15 @@ struct AdminUpdateLessonView: View {
     }
 }
 
-struct AdminUpdateLessonView_Previews: PreviewProvider {
-    static var previews: some View {
-        // Ensure Firebase is configured for the preview
-        if FirebaseApp.app() == nil {
-            FirebaseApp.configure()
-        }
+#Preview {
 
-        return AdminUpdateLessonView(
+    NavigationView {
+        AdminUpdateLessonView(
             lessonId: "previewLesson123",
-            onLessonUpdated: { print("Preview: Lesson Updated") },
-            onShowError: { error in print("Preview: Error - \(error)") }
+            onLessonUpdated: { print("Preview: Lesson updated!") },
+            onShowError: { error in print("Preview Error: \(error)") }
         )
-        .environmentObject(AdminUpdateLessonViewModel())
+        .environmentObject(AuthViewModel())
+        .environmentObject(AdminLessonViewModel())
     }
 }

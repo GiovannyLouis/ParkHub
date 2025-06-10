@@ -21,19 +21,7 @@ struct reportCardView: View {
                 Spacer()
                 
                 // Show delete button only if the report belongs to the current user
-                if report.userId == currentUserId && !report.userId.isEmpty {
-                    Button {
-                        // Consider adding an alert here for delete confirmation
-                        // Example: reportViewModel.showDeleteConfirmationAlert(for: report)
-                        Task {
-                            await reportViewModel.deleteReport(report: report)
-                        }
-                    } label: {
-                        Image(systemName: "trash.fill")
-                            .foregroundColor(.red)
-                    }
-                    .buttonStyle(.plain)
-                }
+                
             }
             
             // --- Static Placeholder Image Section ---
@@ -65,6 +53,19 @@ struct reportCardView: View {
                 .font(.caption)
                 .foregroundColor(.gray)
                 .padding(.top, 2)
+            if report.userId == currentUserId && !report.userId.isEmpty {
+                Button {
+                    // Consider adding an alert here for delete confirmation
+                    // Example: reportViewModel.showDeleteConfirmationAlert(for: report)
+                    Task {
+                        await reportViewModel.deleteReport(report: report)
+                    }
+                } label: {
+                    Image(systemName: "trash.fill")
+                        .foregroundColor(.red)
+                }
+                .buttonStyle(.plain)
+            }
         }
         .padding()
         .background(Color(.systemBackground)) // Adapts to light/dark mode

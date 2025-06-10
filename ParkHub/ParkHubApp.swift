@@ -16,6 +16,7 @@ struct ParkHubApp: App {
     @StateObject var bukitVM = BukitViewModel()
     @StateObject var lapanganVM = LapanganViewModel()
     @StateObject var gedungVM = GedungViewModel()
+    @StateObject var lessonViewModel = LessonViewModel()
     
     init(){
         FirebaseApp.configure()
@@ -28,12 +29,14 @@ struct ParkHubApp: App {
     }
     var body: some Scene {
         WindowGroup {
+            
             MainPageView()
                 .environmentObject(authVM)
                 .environmentObject(reportViewModel)
                 .environmentObject(bukitVM)
                 .environmentObject(lapanganVM)
                 .environmentObject(gedungVM)
+                .environmentObject(lessonViewModel)
         }
     }
 }

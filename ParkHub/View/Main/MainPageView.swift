@@ -1,7 +1,3 @@
-// MainPageView.swift
-// ParkHub
-// Created by student on 03/06/25.
-
 import SwiftUI
 
 struct MainPageView: View {
@@ -11,87 +7,219 @@ struct MainPageView: View {
     @EnvironmentObject var bukitVM: BukitViewModel
     @EnvironmentObject var lapanganVM: LapanganViewModel
     @EnvironmentObject var gedungVM: GedungViewModel
+    @EnvironmentObject var reportVM: ReportViewModel
+    
+    @EnvironmentObject var adminLessonVM: AdminLessonViewModel
+    
+    @State private var adminActionAlertInfo: AlertInfo? // Make sure AlertInfo is defined
+    
     @State private var showAuthSheet = false
     @State private var isRegistering = false
-
+    
     @State private var showingSubmitReportSheet = false
-
+    @State private var showingBrowseLessonsSheet = false
+    
+    private var isAdminUser: Bool {
+        authVM.firebaseAuthUser?.email == "admin@gmail.com"
+    }
+    
     var body: some View {
-        NavigationView { // Your existing NavigationView
-            VStack {
+        NavigationView {
+            VStack(spacing: 0) {
                 if authVM.isSignedIn {
-                    // Content to show when the user IS signed in
-                    Text("Welcome to ParkHub!")
-                        .font(.largeTitle)
-                        .padding()
-
-                    if let user = authVM.firebaseAuthUser {
-                        Text("Hello, \(user.displayName ?? user.email ?? "User")!")
-                            .font(.title2)
-                            .padding(.bottom)
-                    }
-
-                    // Button to create a new report (presents a sheet)
-                    Button {
-                        reportVM.clearInputFields()
-                        showingSubmitReportSheet = true
-                    } label: {
-                        Label("Create New Report", systemImage: "plus.circle.fill")
-                            .font(.headline)
-                    }
-                    .padding()
-                    .buttonStyle(.borderedProminent)
-                    .tint(.orange)
-
-                    // --- Button to navigate to reportListView ---
-                    NavigationLink {
-                        // Destination View: reportListView
-                        // EnvironmentObjects (authVM, reportVM) will be inherited
-                        reportListView()
-                            .navigationTitle("All Reports") // Give reportListView a title
-                            .navigationBarTitleDisplayMode(.inline)
-                    } label: {
-                        Label("View All Reports", systemImage: "list.bullet.rectangle.fill")
-                            .font(.headline)
-                    }
-                    .padding()
-                    .buttonStyle(.bordered) // Different style for this navigation button
-                    .tint(.blue) // Different color
-                    // --- End of Button to reportListView ---
-
+                    TopAppBar()
                     
-                    NavigationLink(destination: LocationView()) {
-                        Text("Locations")
+                    ScrollView {
+                        VStack(spacing: 24) {
+                            // Welcome Header Section
+                            VStack(spacing: 12) {
+                                Text("Welcome to ParkHub!")
+                                    .font(.largeTitle)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.primary)
+                                
+                                if let user = authVM.firebaseAuthUser {
+                                    Text("Hello, \(user.displayName ?? user.email ?? "User")!")
+                                        .font(.title3)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .padding(.top, 20)
+                            .padding(.horizontal)
+                            
+                            // Admin Panel Section
+                            if isAdminUser {
+                                VStack(spacing: 16) {
+                                    HStack {
+                                        Text("Admin Panel")
+                                            .font(.title2)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.primary)
+                                        Spacer()
+                                    }
+                                    
+                                    VStack(spacing: 12) {
+                                        NavigationLink {
+                                            AdminManageLessonView(
+                                                token: authVM.firebaseAuthUser?.uid ?? "admin_token_error",
+                                                onLogout: {
+                                                    authVM.signOut()
+                                                }
+                                            )
+                                            .environmentObject(authVM)
+                                        } label: {
+                                            HomeActionCard(
+                                                title: "Manage Lessons",
+                                                icon: "slider.horizontal.3",
+                                                subtitle: "Edit and organize lessons"
+                                            )
+                                        }
+                                        
+                                        NavigationLink {
+                                            AdminCreateLessonView(
+                                                token: authVM.firebaseAuthUser?.uid ?? "admin_token_error_direct_create",
+                                                onLessonCreated: {
+                                                    self.adminActionAlertInfo = AlertInfo(message: "Lesson created successfully!", isError: false)
+                                                },
+                                                onShowError: { errorMessage in
+                                                    self.adminActionAlertInfo = AlertInfo(message: errorMessage, isError: true)
+                                                }
+                                            )
+                                            .environmentObject(authVM) // Pass AdminLessonViewModel here too
+
+                                            
+                                            .navigationTitle("Create New Lesson")
+                                            .navigationBarTitleDisplayMode(.inline)
+                                        } label: {
+                                            HomeActionCard(
+                                                title: "Create New Lesson",
+                                                icon: "plus.rectangle.on.folder",
+                                                subtitle: "Add new educational content"
+                                            )
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal)
+                                
+                                Divider()
+                                    .padding(.horizontal)
+                            }
+                            
+                            // Main Actions Section
+                            VStack(spacing: 16) {
+                                HStack {
+                                    Text("Quick Actions")
+                                        .font(.title2)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.primary)
+                                    Spacer()
+                                }
+                                .padding(.horizontal)
+                                
+                                LazyVGrid(columns: [
+                                    GridItem(.flexible()),
+                                    GridItem(.flexible())
+                                ], spacing: 16) {
+                                    Button {
+                                        reportVM.clearInputFields()
+                                        showingSubmitReportSheet = true
+                                    } label: {
+                                        HomeGridCard(
+                                            title: "Create Report",
+                                            icon: "plus.circle.fill",
+                                            color: .blue
+                                        )
+                                    }
+                                    
+                                    NavigationLink {
+                                        reportListView()
+                                            .navigationTitle("All Reports")
+                                            .navigationBarTitleDisplayMode(.inline)
+                                    } label: {
+                                        HomeGridCard(
+                                            title: "View Reports",
+                                            icon: "list.bullet.rectangle.fill",
+                                            color: .blue
+                                        )
+                                    }
+                                    
+                                    Button {
+                                        showingBrowseLessonsSheet = true
+                                    } label: {
+                                        HomeGridCard(
+                                            title: "Browse Lessons",
+                                            icon: "book.closed.fill",
+                                            color: .blue
+                                        )
+                                    }
+                                    
+                                    NavigationLink {
+                                        LocationView()
+                                    } label: {
+                                        HomeGridCard(
+                                            title: "View Locations",
+                                            icon: "map.fill",
+                                            color: .blue
+                                        )
+                                    }
+                                }
+                                .padding(.horizontal)
+                            }
+                            
+                            Spacer(minLength: 40)
+                            
+                        }
                     }
                     
-                    Spacer()
-
-                    Button("Log Out") {
-                        authVM.signOut()
-                    }
-                    .padding()
-                    .buttonStyle(.bordered)
-                    .tint(.red)
-
+                    BotAppBar()
+                    
                 } else {
-                    // Content to show when the user IS NOT signed in
-                    Spacer()
-                    LogoBig() // Assuming LogoBig is defined and accessible
-                        .padding(.bottom, 30)
-                    Text("Please log in or register to continue.")
-                        .font(.headline)
-                        .multilineTextAlignment(.center)
-                        .padding()
-                    Spacer()
+                    // Logged out state
+                    ZStack {
+                        Color(.systemGroupedBackground)
+                            .ignoresSafeArea()
+                        
+                        VStack(spacing: 30) {
+                            Spacer()
+                            
+                            VStack(spacing: 16) {
+                                Text("Welcome to ParkHub")
+                                    .font(.largeTitle)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.primary)
+                                
+                                Text("Please log in or register to continue.")
+                                    .font(.title3)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal)
+                            }
+                            
+                            Button("Login / Register") {
+                                authVM.clearInputFields()
+                                authVM.clearAuthError()
+                                self.showAuthSheet = true
+                            }
+                            .frame(maxWidth: 200)
+                            .padding(.vertical, 16)
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                            .font(.headline)
+                            
+                            Spacer()
+                        }
+                    }
                 }
             }
-            .navigationTitle("ParkHub") // Title for MainPageView
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarHidden(authVM.isSignedIn)
             .onAppear {
-                if !authVM.isSignedIn {
+                if !authVM.isSignedIn && !showAuthSheet {
                     isRegistering = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        showAuthSheet = true
+                        if !authVM.isSignedIn {  // Double check user still not signed in
+                            showAuthSheet = true
+                        }
                     }
                 }
             }
@@ -100,11 +228,28 @@ struct MainPageView: View {
                     print("Auth sheet dismissed, user still not signed in.")
                 }
             }) {
-                AuthSheetContainerView(isRegisteringInitially: $isRegistering)
+                if !authVM.isSignedIn {
+                    AuthSheetContainerView(isRegisteringInitially: $isRegistering)
+                        .environmentObject(authVM)
+                }
             }
             .sheet(isPresented: $showingSubmitReportSheet) {
-                NavigationView { // Sheet content often has its own NavigationView
+                NavigationView {
                     submitReportView()
+                }
+            }
+            .sheet(isPresented: $showingBrowseLessonsSheet) {
+                NavigationView {
+                    LessonPageView()
+                        .navigationTitle("Browse Lessons")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .navigationBarTrailing) {
+                                Button("Done") {
+                                    showingBrowseLessonsSheet = false
+                                }
+                            }
+                        }
                 }
             }
             .onChange(of: authVM.isSignedIn) { newIsSignedInStatus in
@@ -116,57 +261,103 @@ struct MainPageView: View {
                     if !showAuthSheet {
                         isRegistering = false
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            showAuthSheet = true
+                            if !authVM.isSignedIn {
+                                showAuthSheet = true
+                            }
                         }
                     }
                 }
+            }
+            .alert(item: $adminActionAlertInfo) { info in
+                Alert(
+                    title: Text(info.isError ? "Error" : "Success"),
+                    message: Text(info.message),
+                    dismissButton: .default(Text("OK"))
+                )
             }
         }
     }
 }
 
-// AuthSheetContainerView (defined in the same file or accessible)
-// ... (your AuthSheetContainerView code) ...
-// struct AuthSheetContainerView: View { ... }
+// MARK: - Supporting Views
 
-// Make sure LogoBig, LoginView, RegisterView, submitReportView, reportListView
-// are defined and accessible from their respective files.
-
-#Preview {
-    // Ensure all necessary dummy views or actual views are available for preview
-    // For example, if reportListView uses TopAppBar/BotAppBar, they need to be available.
-    // struct reportListView: View { var body: some View { Text("Report List Preview") } } // Dummy for this preview
-    // struct submitReportView: View { var body: some View { Text("Submit Report Preview") } } // Dummy
-    // struct LogoBig: View { var body: some View { Image(systemName: "p.circle.fill").font(.largeTitle) } } // Dummy
-    // struct AuthSheetContainerView: View { ... } // Needs LoginView & RegisterView dummies if not defined
-
-    MainPageView()
-        .environmentObject(AuthViewModel())
-        .environmentObject(ReportViewModel()) // Make sure ReportViewModel is provided
+struct HomeActionCard: View {
+    let title: String
+    let icon: String
+    let subtitle: String
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundColor(.blue)
+                .frame(width: 40, height: 40)
+                .background(Color.blue.opacity(0.1))
+                .cornerRadius(10)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
+    }
 }
-// AuthSheetContainerView is defined here, within the same file.
-// This view manages showing LoginView or RegisterView within the sheet
-// and handles dismissing the sheet on successful authentication.
+
+struct HomeGridCard: View {
+    let title: String
+    let icon: String
+    let color: Color
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.largeTitle)
+                .foregroundColor(color)
+            
+            Text(title)
+                .font(.headline)
+                .foregroundColor(.primary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 120)
+        .background(Color(.systemGray6))
+        .cornerRadius(16)
+    }
+}
+
 struct AuthSheetContainerView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @Binding var isRegisteringInitially: Bool
     @State private var currentIsRegistering: Bool
-
+    
     @Environment(\.dismiss) var dismissSheet
-
+    
     init(isRegisteringInitially: Binding<Bool>) {
         _isRegisteringInitially = isRegisteringInitially
         _currentIsRegistering = State(initialValue: isRegisteringInitially.wrappedValue)
     }
     
     var body: some View {
-        NavigationView { // Or NavigationStack for iOS 16+
+        NavigationView {
             Group {
                 if currentIsRegistering {
-                    // Assuming RegisterView is defined in its own file and accessible
                     RegisterView(showRegisterSheet: $currentIsRegistering)
                 } else {
-                    // Assuming LoginView is defined in its own file and accessible
                     LoginView(showRegisterSheet: $currentIsRegistering)
                 }
             }
@@ -198,8 +389,9 @@ struct AuthSheetContainerView: View {
     MainPageView()
         .environmentObject(AuthViewModel())
         .environmentObject(ReportViewModel()) // Add ReportViewModel for preview
-        .environmentObject(AuthViewModel()) // Provide a dummy AuthViewModel for preview
         .environmentObject(BukitViewModel())
         .environmentObject(LapanganViewModel())
         .environmentObject(GedungViewModel())
+        .environmentObject(ReportViewModel())
+        .environmentObject(AdminLessonViewModel())
 }
