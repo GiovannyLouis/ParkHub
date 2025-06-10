@@ -58,7 +58,7 @@ struct reportCardView: View {
                     // Consider adding an alert here for delete confirmation
                     // Example: reportViewModel.showDeleteConfirmationAlert(for: report)
                     Task {
-                        await reportViewModel.deleteReport(report: report)
+                        await reportViewModel.deleteReport(report: report, currentUserId: currentUserId ?? "")
                     }
                 } label: {
                     Image(systemName: "trash.fill")
