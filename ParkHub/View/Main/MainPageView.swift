@@ -7,7 +7,6 @@ struct MainPageView: View {
     @EnvironmentObject var bukitVM: BukitViewModel
     @EnvironmentObject var lapanganVM: LapanganViewModel
     @EnvironmentObject var gedungVM: GedungViewModel
-    @EnvironmentObject var reportVM: ReportViewModel
     
     @EnvironmentObject var adminLessonVM: AdminLessonViewModel
     
