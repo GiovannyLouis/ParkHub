@@ -2,196 +2,186 @@ import SwiftUI
 
 struct MainPageView: View {
     @EnvironmentObject var authVM: AuthViewModel
-    @EnvironmentObject var reportVM: ReportViewModel // For submitting reports
-
+    @EnvironmentObject var reportVM: ReportViewModel
     @EnvironmentObject var locationVM: LocationViewModel
-    
     @EnvironmentObject var adminLessonVM: AdminLessonViewModel
-    
-    @State private var adminActionAlertInfo: AlertInfo? // Make sure AlertInfo is defined
-    
+
+    @State private var adminActionAlertInfo: AlertInfo?
     @State private var showAuthSheet = false
     @State private var isRegistering = false
-    
     @State private var showingSubmitReportSheet = false
-    @State private var showingBrowseLessonsSheet = false
-    
+
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
     private var isAdminUser: Bool {
         authVM.firebaseAuthUser?.email == "admin@gmail.com"
     }
-    
+
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
+            Group {
                 if authVM.isSignedIn {
-                    TopAppBar()
-                    
-                    ScrollView {
-                        VStack(spacing: 24) {
-                            // Welcome Header Section
-                            VStack(spacing: 12) {
-                                Text("Welcome to ParkHub!")
-                                    .font(.largeTitle)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.primary)
-                                
-                                if let user = authVM.firebaseAuthUser {
-                                    Text("Hello, \(user.displayName ?? user.email ?? "User")!")
-                                        .font(.title3)
-                                        .foregroundColor(.secondary)
+                    VStack(spacing: 0) {
+                        TopAppBar()
+
+                        ScrollView {
+                            VStack(spacing: 32) {
+                                VStack(spacing: 12) {
+                                    Text("Welcome to ParkHub!")
+                                        .font(.largeTitle)
+                                        .fontWeight(.bold)
+
+                                    if let user = authVM.firebaseAuthUser {
+                                        Text("Hello, \(user.displayName ?? user.email ?? "User")!")
+                                            .font(.title3)
+                                            .foregroundColor(.secondary)
+                                    }
                                 }
-                            }
-                            .padding(.top, 20)
-                            .padding(.horizontal)
-                            
-                            // Admin Panel Section
-                            if isAdminUser {
+                                .padding(.top, 20)
+                                .padding(.horizontal)
+
+                                if isAdminUser {
+                                    VStack(spacing: 20) {
+                                        HStack {
+                                            Text("Admin Panel")
+                                                .font(.title2)
+                                                .fontWeight(.semibold)
+                                            Spacer()
+                                        }
+
+                                        VStack(spacing: 12) {
+                                            NavigationLink {
+                                                AdminManageLessonView(
+                                                    token: authVM.firebaseAuthUser?.uid ?? "admin_token_error",
+                                                    onLogout: {
+                                                        authVM.signOut()
+                                                    }
+                                                )
+                                                .environmentObject(authVM)
+                                            } label: {
+                                                HomeActionCard(
+                                                    title: "Manage Lessons",
+                                                    icon: "slider.horizontal.3",
+                                                    subtitle: "Edit and organize lessons"
+                                                )
+                                            }
+
+                                            NavigationLink {
+                                                AdminCreateLessonView(
+                                                    token: authVM.firebaseAuthUser?.uid ?? "admin_token_error_direct_create",
+                                                    onLessonCreated: {
+                                                        self.adminActionAlertInfo = AlertInfo(message: "Lesson created successfully!", isError: false)
+                                                    },
+                                                    onShowError: { errorMessage in
+                                                        self.adminActionAlertInfo = AlertInfo(message: errorMessage, isError: true)
+                                                    }
+                                                )
+                                                .environmentObject(authVM)
+                                                .navigationTitle("Create New Lesson")
+                                                .navigationBarTitleDisplayMode(.inline)
+                                            } label: {
+                                                HomeActionCard(
+                                                    title: "Create New Lesson",
+                                                    icon: "plus.rectangle.on.folder",
+                                                    subtitle: "Add new educational content"
+                                                )
+                                            }
+                                        }
+                                    }
+                                    .padding(.horizontal)
+
+                                    Divider()
+                                        .padding(.horizontal)
+                                }
+
                                 VStack(spacing: 16) {
                                     HStack {
-                                        Text("Admin Panel")
+                                        Text("Quick Actions")
                                             .font(.title2)
                                             .fontWeight(.semibold)
-                                            .foregroundColor(.primary)
                                         Spacer()
                                     }
-                                    
-                                    VStack(spacing: 12) {
-                                        NavigationLink {
-                                            AdminManageLessonView(
-                                                token: authVM.firebaseAuthUser?.uid ?? "admin_token_error",
-                                                onLogout: {
-                                                    authVM.signOut()
-                                                }
-                                            )
-                                            .environmentObject(authVM)
-                                        } label: {
-                                            HomeActionCard(
-                                                title: "Manage Lessons",
-                                                icon: "slider.horizontal.3",
-                                                subtitle: "Edit and organize lessons"
-                                            )
-                                        }
-                                        
-                                        NavigationLink {
-                                            AdminCreateLessonView(
-                                                token: authVM.firebaseAuthUser?.uid ?? "admin_token_error_direct_create",
-                                                onLessonCreated: {
-                                                    self.adminActionAlertInfo = AlertInfo(message: "Lesson created successfully!", isError: false)
-                                                },
-                                                onShowError: { errorMessage in
-                                                    self.adminActionAlertInfo = AlertInfo(message: errorMessage, isError: true)
-                                                }
-                                            )
-                                            .environmentObject(authVM) // Pass AdminLessonViewModel here too
-
-                                            
-                                            .navigationTitle("Create New Lesson")
-                                            .navigationBarTitleDisplayMode(.inline)
-                                        } label: {
-                                            HomeActionCard(
-                                                title: "Create New Lesson",
-                                                icon: "plus.rectangle.on.folder",
-                                                subtitle: "Add new educational content"
-                                            )
-                                        }
-                                    }
-                                }
-                                .padding(.horizontal)
-                                
-                                Divider()
                                     .padding(.horizontal)
-                            }
-                            
-                            // Main Actions Section
-                            VStack(spacing: 16) {
-                                HStack {
-                                    Text("Quick Actions")
-                                        .font(.title2)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(.primary)
-                                    Spacer()
+
+                                    LazyVGrid(columns: horizontalSizeClass == .regular ?
+                                               [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())] :
+                                               [GridItem(.flexible()), GridItem(.flexible())],
+                                               spacing: 20) {
+                                        Button {
+                                            reportVM.clearInputFields()
+                                            showingSubmitReportSheet = true
+                                        } label: {
+                                            HomeGridCard(
+                                                title: "Create Report",
+                                                icon: "plus.circle.fill",
+                                                color: .blue
+                                            )
+                                        }
+
+                                        NavigationLink {
+                                            reportListView()
+                                                .navigationTitle("All Reports")
+                                                .navigationBarTitleDisplayMode(.inline)
+                                        } label: {
+                                            HomeGridCard(
+                                                title: "View Reports",
+                                                icon: "list.bullet.rectangle.fill",
+                                                color: .blue
+                                            )
+                                        }
+
+                                        NavigationLink {
+                                            LessonPageView()
+                                                .navigationTitle("Browse Lessons")
+                                                .navigationBarTitleDisplayMode(.inline)
+                                        } label: {
+                                            HomeGridCard(
+                                                title: "Browse Lessons",
+                                                icon: "book.closed.fill",
+                                                color: .blue
+                                            )
+                                        }
+
+                                        NavigationLink {
+                                            LocationView()
+                                        } label: {
+                                            HomeGridCard(
+                                                title: "View Locations",
+                                                icon: "map.fill",
+                                                color: .blue
+                                            )
+                                        }
+                                    }
+                                    .padding(.horizontal)
                                 }
-                                .padding(.horizontal)
-                                
-                                LazyVGrid(columns: [
-                                    GridItem(.flexible()),
-                                    GridItem(.flexible())
-                                ], spacing: 16) {
-                                    Button {
-                                        reportVM.clearInputFields()
-                                        showingSubmitReportSheet = true
-                                    } label: {
-                                        HomeGridCard(
-                                            title: "Create Report",
-                                            icon: "plus.circle.fill",
-                                            color: .blue
-                                        )
-                                    }
-                                    
-                                    NavigationLink {
-                                        reportListView()
-                                            .navigationTitle("All Reports")
-                                            .navigationBarTitleDisplayMode(.inline)
-                                    } label: {
-                                        HomeGridCard(
-                                            title: "View Reports",
-                                            icon: "list.bullet.rectangle.fill",
-                                            color: .blue
-                                        )
-                                    }
-                                    
-                                    Button {
-                                        showingBrowseLessonsSheet = true
-                                    } label: {
-                                        HomeGridCard(
-                                            title: "Browse Lessons",
-                                            icon: "book.closed.fill",
-                                            color: .blue
-                                        )
-                                    }
-                                    
-                                    NavigationLink {
-                                        LocationView()
-                                    } label: {
-                                        HomeGridCard(
-                                            title: "View Locations",
-                                            icon: "map.fill",
-                                            color: .blue
-                                        )
-                                    }
-                                }
-                                .padding(.horizontal)
+
+                                Spacer(minLength: 40)
                             }
-                            
-                            Spacer(minLength: 40)
-                            
+                            .padding(.bottom, 20)
                         }
+
+                        BotAppBar()
                     }
-                    
-                    BotAppBar()
-                    
                 } else {
-                    // Logged out state
                     ZStack {
                         Color(.systemGroupedBackground)
                             .ignoresSafeArea()
-                        
+
                         VStack(spacing: 30) {
                             Spacer()
-                            
+
                             VStack(spacing: 16) {
                                 Text("Welcome to ParkHub")
                                     .font(.largeTitle)
                                     .fontWeight(.bold)
-                                    .foregroundColor(.primary)
-                                
+
                                 Text("Please log in or register to continue.")
                                     .font(.title3)
                                     .foregroundColor(.secondary)
                                     .multilineTextAlignment(.center)
                                     .padding(.horizontal)
                             }
-                            
+
                             Button("Login / Register") {
                                 authVM.clearInputFields()
                                 authVM.clearAuthError()
@@ -203,7 +193,7 @@ struct MainPageView: View {
                             .foregroundColor(.white)
                             .cornerRadius(12)
                             .font(.headline)
-                            
+
                             Spacer()
                         }
                     }
@@ -214,17 +204,13 @@ struct MainPageView: View {
                 if !authVM.isSignedIn && !showAuthSheet {
                     isRegistering = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        if !authVM.isSignedIn {  // Double check user still not signed in
+                        if !authVM.isSignedIn {
                             showAuthSheet = true
                         }
                     }
                 }
             }
-            .sheet(isPresented: $showAuthSheet, onDismiss: {
-                if !authVM.isSignedIn {
-                    print("Auth sheet dismissed, user still not signed in.")
-                }
-            }) {
+            .sheet(isPresented: $showAuthSheet) {
                 if !authVM.isSignedIn {
                     AuthSheetContainerView(isRegisteringInitially: $isRegistering)
                         .environmentObject(authVM)
@@ -233,20 +219,6 @@ struct MainPageView: View {
             .sheet(isPresented: $showingSubmitReportSheet) {
                 NavigationView {
                     submitReportView()
-                }
-            }
-            .sheet(isPresented: $showingBrowseLessonsSheet) {
-                NavigationView {
-                    LessonPageView()
-                        .navigationTitle("Browse Lessons")
-                        .navigationBarTitleDisplayMode(.inline)
-                        .toolbar {
-                            ToolbarItem(placement: .navigationBarTrailing) {
-                                Button("Done") {
-                                    showingBrowseLessonsSheet = false
-                                }
-                            }
-                        }
                 }
             }
             .onChange(of: authVM.isSignedIn) { newIsSignedInStatus in
@@ -273,6 +245,7 @@ struct MainPageView: View {
                 )
             }
         }
+        .navigationViewStyle(StackNavigationViewStyle())
     }
 }
 

@@ -50,22 +50,7 @@ struct LessonPageView: View {
                     .progressViewStyle(CircularProgressViewStyle(tint: primaryOrange))
                     .scaleEffect(1.5)
                 Spacer()
-            } else if let message = lessonVM.errorMessage {
-                Spacer()
-                VStack { // Added VStack for better layout of error message and retry
-                    Text(message)
-                        .foregroundColor(.red)
-                        .font(.system(size: 16))
-                        .multilineTextAlignment(.center)
-                        .padding()
-                    Button("Try Again") {
-                        lessonVM.fetchAllLessons()
-                    }
-                    .padding()
-                    .buttonStyle(.borderedProminent)
-                    .tint(primaryOrange)
-                }
-                Spacer()
+            
             } else if lessonVM.lessons.isEmpty { // No error, but no lessons
                 Spacer()
                 VStack {
