@@ -117,3 +117,42 @@ class LocationRepository {
         print("LocationRepository deinitialized.")
     }
 }
+
+class MockLocationRepository: LocationRepository {
+    override func observeBukitLocations(onUpdate: @escaping ([Location]) -> Void, onError: @escaping (Error) -> Void) {
+        var tempLocations: [Location] = []
+        for i in 1...36 {
+            let isSpotFilled = (i % 5 == 0) || (i > 30)
+            tempLocations.append(Location(id: i, nama: "Bukit-\(i)", isFilled: isSpotFilled))
+        }
+        onUpdate(tempLocations)
+    }
+    
+    override func observeLapanganLocations(onUpdate: @escaping ([Location]) -> Void, onError: @escaping (Error) -> Void) {
+        var tempLocations: [Location] = []
+        for i in 0..<281 {
+            let isSpotFilled = (i % 10 == 0) || (i > 250 && i < 260)
+            tempLocations.append(Location(id: i, nama: "Lapangan-\(i)", isFilled: isSpotFilled))
+        }
+        onUpdate(tempLocations.sorted { $0.id < $1.id })
+    }
+    
+    override func observeGedungLocations(onUpdate: @escaping ([Location]) -> Void, onError: @escaping (Error) -> Void) {
+        var tempLocations: [Location] = []
+        for floor in 3...14 {
+            let isEvenFloor = (floor % 2 == 0)
+            let numberOfSpots = isEvenFloor ? 36 : 39
+            for spotNumber in 1...numberOfSpots {
+                let locationId = floor * 100 + spotNumber
+                let locationName = "Gedung-\(floor)-\(spotNumber)"
+                let isSpotFilled = (spotNumber % 7 == 0) || (floor == 3 && spotNumber > numberOfSpots - 5)
+                tempLocations.append(Location(id: locationId, nama: locationName, isFilled: isSpotFilled))
+            }
+        }
+        onUpdate(tempLocations.sorted { $0.id < $1.id })
+    }
+    
+override func removeAllObservers() {
+       print("MockLocationRepository: No observers to remove.")
+   }
+}

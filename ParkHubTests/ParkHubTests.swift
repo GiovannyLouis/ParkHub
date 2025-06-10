@@ -284,3 +284,63 @@ final class ReportViewModelTests: XCTestCase {
 }
 
 
+final class LocationViewModelTests: XCTestCase {
+
+    var viewModel: LocationViewModel!
+
+    override func setUp() {
+        super.setUp()
+        viewModel = LocationViewModel(repository: MockLocationRepository())
+    }
+
+    override func tearDown() {
+        viewModel = nil
+        super.tearDown()
+    }
+
+    func testBukitLocationSections() {
+        let expectation = XCTestExpectation(description: "Bukit locations loaded")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            XCTAssertEqual(self.viewModel.vertiBukitLocations.count, 18)
+            XCTAssertEqual(self.viewModel.horizBukitLocations.count, 18)
+            expectation.fulfill()
+        }
+        wait(for: [expectation], timeout: 1.0)
+    }
+
+    func testLapanganLocationSections() {
+        let expectation = XCTestExpectation(description: "Lapangan locations loaded")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            XCTAssertEqual(self.viewModel.locations_260_273.count, 14)
+            XCTAssertEqual(self.viewModel.locations_220_259_rev.count, 40)
+            XCTAssertEqual(self.viewModel.locations_0_39.count, 40)
+            expectation.fulfill()
+        }
+        wait(for: [expectation], timeout: 1.0)
+    }
+
+    func testGedungFloorFiltering() {
+        let expectation = XCTestExpectation(description: "Gedung locations loaded")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            self.viewModel.currentGedungFloor = 4 // Even floor
+            XCTAssertEqual(self.viewModel.filteredGedungsForCurrentFloor.count, 36)
+            XCTAssertEqual(self.viewModel.evenFloorLeftSectionSpots.count, 18)
+
+            self.viewModel.currentGedungFloor = 5 // Odd floor
+            XCTAssertEqual(self.viewModel.filteredGedungsForCurrentFloor.count, 39)
+            XCTAssertEqual(self.viewModel.oddFloorLeftSectionSpots.count, 21)
+            expectation.fulfill()
+        }
+        wait(for: [expectation], timeout: 1.0)
+    }
+
+    func testGedungFloorNavigationLimits() {
+        viewModel.currentGedungFloor = 14
+        viewModel.incrementGedungFloor()
+        XCTAssertEqual(viewModel.currentGedungFloor, 14)
+
+        viewModel.currentGedungFloor = 3
+        viewModel.decrementGedungFloor()
+        XCTAssertEqual(viewModel.currentGedungFloor, 3)
+    }
+}
