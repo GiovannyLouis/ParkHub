@@ -122,8 +122,8 @@ struct VertiBukitView: View {
                 Rectangle()
                     .fill(color)
                     .frame(width: 12, height: 24)
-                Text(location.nama)
-                    .font(.system(size: 6))// Original was commented out
+//                Text(location.nama)
+//                    .font(.system(size: 6))// Original was commented out
             }
             .frame(width: 12, height: 24)
             Spacer().frame(width: 2)
@@ -142,8 +142,8 @@ struct HorizBukitView: View {
                 Rectangle()
                     .fill(color)
                     .frame(width: 24, height: 12)
-                Text(location.nama)
-                    .font(.system(size: 4))// Original was commented out
+//                Text(location.nama)
+//                    .font(.system(size: 4))// Original was commented out
             }
             .frame(width: 24, height: 12)
             Spacer().frame(height: 2)

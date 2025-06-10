@@ -4,58 +4,61 @@
 //
 //  Created by student on 30/05/25.
 //
-
 import SwiftUI
-
-// --- Main Location Page View ---
 
 struct LocationView: View {
     @EnvironmentObject var locationVM: LocationViewModel
-    // In a real app with NavigationStack, you might not need to pass a controller
-    // explicitly if NavigationLinks are self-contained.
-    // For this translation, we'll embed it in a NavigationStack.
 
     var body: some View {
-        NavigationStack { // Manages navigation state
-            VStack() { // Equivalent to the outer Column
+        NavigationStack {
+            VStack(spacing: 0) {
                 TopAppBar()
 
-                ScrollView { // To allow content to scroll if it exceeds screen height
-                    VStack(alignment: .center, spacing: 30) {
-                        NavigationLink(destination: BukitView()) {
-                            RectangleWithImageAndTextView(
-                                imageName: "bukit", // Assumes "bukit.jpg" or "bukit.png" is in Assets
-                                text: "Bukit"
-                            )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        NavigationLink(destination: LapanganView()) {
-                            RectangleWithImageAndTextView(
-                                imageName: "lapangan",
-                                text: "Lapangan"
-                            )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        NavigationLink(destination: GedungView()) {
-                            RectangleWithImageAndTextView(
-                                imageName: "gedung",
-                                text: "Gedung"
-                            )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 30)
-                }
-                // The ScrollView will take up the available space, similar to weight(1f)
+                GeometryReader { geometry in
+                    ScrollView {
+                        VStack(alignment: .center, spacing: 30) {
+                            NavigationLink(destination: BukitView()) {
+                                RectangleWithImageAndTextView(
+                                    imageName: "bukit",
+                                    text: "Bukit",
+                                    maxWidth: geometry.size.width - 48, // 24 padding each side
+                                    height: geometry.size.width > 600 ? 260 : 160
+                                )
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(PlainButtonStyle())
 
-                Spacer() // Pushes the BotAppBarView to the bottom
+                            NavigationLink(destination: LapanganView()) {
+                                RectangleWithImageAndTextView(
+                                    imageName: "lapangan",
+                                    text: "Lapangan",
+                                    maxWidth: geometry.size.width - 48,
+                                    height: geometry.size.width > 600 ? 260 : 160
+                                )
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(PlainButtonStyle())
+
+                            NavigationLink(destination: GedungView()) {
+                                RectangleWithImageAndTextView(
+                                    imageName: "gedung",
+                                    text: "Gedung",
+                                    maxWidth: geometry.size.width - 48,
+                                    height: geometry.size.width > 600 ? 260 : 160
+                                )
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        .padding(.horizontal, 24)
+//                        .padding(.top, 20)
+                        .frame(minHeight: geometry.size.height)
+                    }
+                }
+                .ignoresSafeArea(.keyboard)
 
                 BotAppBar()
             }
-            .ignoresSafeArea(.keyboard) // Good practice
-            // .navigationTitle("Locations") // Alternative way to set title if TopAppBarView doesn't
-            // .navigationBarHidden(true) // If TopAppBarView fully replaces the system nav bar
         }
     }
 }
@@ -63,36 +66,27 @@ struct LocationView: View {
 struct RectangleWithImageAndTextView: View {
     let imageName: String
     let text: String
+    let maxWidth: CGFloat
+    let height: CGFloat
 
     var body: some View {
-        // NavigationLink handles the click and navigation
         ZStack {
-            // Background Image
-            Image(imageName) // Ensure this image exists in your Assets.xcassets
+            Image(imageName)
                 .resizable()
-                .aspectRatio(contentMode: .fill) // Equivalent to ContentScale.Crop
-                .frame(height: 160) // Set height before clipping if aspect ratio is fill
-                .clipped() // Important for .fill to not overflow rounded corners before masking
+                .aspectRatio(contentMode: .fill)
+                .frame(width: maxWidth, height: height)
+                .clipped()
 
-            // Overlay
             Color.black.opacity(0.4)
 
-            // Overlay Text
             Text(text)
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.white)
-                // .padding(.top, 8) // This padding might make it not perfectly centered.
-                                  // If you want it truly centered, remove this.
-                                  // If it's an intentional offset, keep it.
         }
-        .frame(maxWidth: .infinity) // Equivalent to fillMaxWidth
-        .frame(height: 160)
+        .frame(width: maxWidth, height: height)
         .cornerRadius(16)
-        // .background(Color.gray.opacity(0.2)) // Fallback if image fails to load, not in original
     }
 }
-
-// --- Preview ---
 
 #Preview {
     LocationView()
