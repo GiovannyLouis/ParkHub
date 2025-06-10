@@ -14,6 +14,7 @@ class AuthViewModel: ObservableObject {
     @Published var isLoading: Bool = false
 
     private var authStateHandler: AuthStateDidChangeListenerHandle?
+    private let authRepository = AuthRepository()
 
     init() {
         listenToAuthState()
@@ -21,17 +22,17 @@ class AuthViewModel: ObservableObject {
 
     deinit {
         if let handle = authStateHandler {
-            Auth.auth().removeStateDidChangeListener(handle)
+            authRepository.removeAuthStateDidChangeListener(handle)
         }
     }
 
     func listenToAuthState() {
-        authStateHandler = Auth.auth().addStateDidChangeListener { [weak self] _, user in
+        authStateHandler = authRepository.addAuthStateDidChangeListener { [weak self] user in
             guard let self = self else { return }
-            
+
             self.firebaseAuthUser = user
             self.isSignedIn = (user != nil)
-            
+
             if self.isSignedIn {
                 print("AuthViewModel: User is signed in - UID: \(user?.uid ?? "N/A"), Email: \(user?.email ?? "N/A"), DisplayName: \(user?.displayName ?? "N/A")")
             } else {
@@ -45,17 +46,18 @@ class AuthViewModel: ObservableObject {
             authError = "Email and password cannot be empty."
             return
         }
-        
+
         isLoading = true
         authError = nil
-        
+
         do {
-            _ = try await Auth.auth().signIn(withEmail: inputUser.email, password: inputUser.password)
-            print("AuthViewModel: Successfully signed in user with email: \(inputUser.email)")
+            let user = try await authRepository.signIn(email: inputUser.email, password: inputUser.password)
+            print("AuthViewModel: Successfully signed in user with email: \(user.email ?? "N/A")")
         } catch {
             print("AuthViewModel: Sign In Error - \(error.localizedDescription)")
-            authError = mapFirebaseError(error)
+            authError = authRepository.mapFirebaseError(error)
         }
+
         isLoading = false
     }
 
@@ -64,65 +66,40 @@ class AuthViewModel: ObservableObject {
             authError = "Username, email, and password cannot be empty."
             return
         }
-        
+
         isLoading = true
         authError = nil
-        
+
         do {
-            let authResult = try await Auth.auth().createUser(withEmail: inputUser.email, password: inputUser.password)
-            
-            let changeRequest = authResult.user.createProfileChangeRequest()
-            changeRequest.displayName = inputUser.username.trimmingCharacters(in: .whitespacesAndNewlines)
-            try await changeRequest.commitChanges()
-            
-            print("AuthViewModel: Successfully signed up user - \(authResult.user.uid) with email: \(inputUser.email) and username: \(inputUser.username)")
-            
+            let user = try await authRepository.signUp(
+                username: inputUser.username,
+                email: inputUser.email,
+                password: inputUser.password
+            )
+            print("AuthViewModel: Successfully signed up user - \(user.uid) with email: \(user.email ?? "N/A") and username: \(user.displayName ?? "N/A")")
         } catch {
             print("AuthViewModel: Sign Up Error - \(error.localizedDescription)")
-            authError = mapFirebaseError(error)
+            authError = authRepository.mapFirebaseError(error)
         }
+
         isLoading = false
     }
 
     func signOut() {
         do {
-            try Auth.auth().signOut()
+            try authRepository.signOut()
             clearInputFields()
         } catch {
             print("AuthViewModel: Sign Out Error - \(error.localizedDescription)")
             authError = "Failed to sign out: \(error.localizedDescription)"
         }
     }
-    
+
     func clearInputFields() {
         inputUser = User()
     }
 
     func clearAuthError() {
         authError = nil
-    }
-
-    private func mapFirebaseError(_ error: Error) -> String {
-        if let errorCode = AuthErrorCode(rawValue: (error as NSError).code) {
-            switch errorCode {
-            case .invalidEmail:
-                return "Invalid email format."
-            case .emailAlreadyInUse:
-                return "This email is already registered. Please login or use a different email."
-            case .weakPassword:
-                return "Password is too weak. It must be at least 6 characters."
-            case .wrongPassword, .invalidCredential:
-                return "Incorrect email or password. Please try again."
-            case .userNotFound:
-                return "No account found with this email. Please register."
-            case .networkError:
-                return "Network error. Please check your connection."
-            case .userDisabled:
-                return "This user account has been disabled."
-            default:
-                return "An authentication error occurred. Please try again."
-            }
-        }
-        return error.localizedDescription
     }
 }

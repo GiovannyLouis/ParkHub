@@ -9,83 +9,61 @@ struct submitReportView: View {
     // Environment variable to dismiss the view
     @Environment(\.dismiss) var dismiss
 
-    // Removed token and id as they are handled by ViewModels and Firebase Auth
-    // var token: String
-    // var id: Int
-
-    // Removed @State variables for inputs as they are now in reportVM
-    // @State private var reportTitleInput: String = ""
-    // @State private var reportDescriptionInput: String = ""
-    // @State private var selectedImage: UIImage? // Image functionality removed
-    // @State private var showImagePicker = false // Image functionality removed
-
-    // Assuming TopAppBar and BotAppBar are defined elsewhere
-    // If not, you'll need to provide their definitions or comment them out.
-    // For this example, I'll assume they exist.
+    // 1. ADD THIS STATE VARIABLE to control the confirmation alert
+    @State private var showConfirmationAlert = false
 
     var body: some View {
-        VStack(spacing: 0) { // Ensure no spacing between TopAppBar, content, BotAppBar
-            TopAppBar() // Your custom TopAppBar
+        VStack(spacing: 0) {
+            TopAppBar()
 
-            // Main content area that scrolls
-            ScrollView { // Make the central form content scrollable
-                VStack { // Main vertical stack for content between Top and Bot AppBars
-                    Spacer() // Pushes form content down a bit if ScrollView is not full
+            ScrollView {
+                VStack {
+                    Spacer()
             
-                    // Form container VStack (white rounded box)
-                    VStack(alignment: .leading, spacing: 12) { // Adjusted spacing
-                        // Back Arrow
+                    VStack(alignment: .leading, spacing: 12) {
+                        // ... (Back Arrow, Title, TextFields are all correct)
                         Image(systemName: "arrow.backward")
                             .font(.title2)
-                            .foregroundColor(.black) // Or your theme color
-                            .padding(.bottom, 8) // Add some space below the arrow
+                            .foregroundColor(.black)
+                            .padding(.bottom, 8)
                             .onTapGesture {
                                 dismiss()
                             }
 
-                        // "Report an Issue" Title
                         Text("Report an Issue")
                             .font(.system(size: 24, weight: .bold))
                             .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.bottom, 10) // Add space below title
+                            .padding(.bottom, 10)
 
-                        // Title field
                         Text("Title:")
                             .font(.system(size: 16, weight: .semibold))
-                        TextField("Enter title", text: $reportVM.reportTitle) // Bind to ViewModel
+                        TextField("Enter title", text: $reportVM.reportTitle)
                             .padding(10)
-                            .background(Color(white: 0.784)) // Your containerColor
+                            .background(Color(white: 0.784))
                             .cornerRadius(5)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 5)
                                     .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                             )
 
-
-                        // Description field
                         Text("Description:")
                             .font(.system(size: 16, weight: .semibold))
-                        TextEditor(text: $reportVM.reportDescription) // Bind to ViewModel
-                            .frame(minHeight: 80, idealHeight: 100, maxHeight: 150) // Adjusted height
-                            .padding(EdgeInsets(top: 8, leading: 5, bottom: 8, trailing: 5)) // More typical padding for TextEditor
-                            .background(Color(white: 0.784)) // Your containerColor
+                        TextEditor(text: $reportVM.reportDescription)
+                            .frame(minHeight: 80, idealHeight: 100, maxHeight: 150)
+                            .padding(EdgeInsets(top: 8, leading: 5, bottom: 8, trailing: 5))
+                            .background(Color(white: 0.784))
                             .cornerRadius(5)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 5)
                                     .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                             )
                         
-                        // Image Upload Field - REMOVED as per "no image" requirement
-                        // Text("Upload Image:") ...
-                        // Button(...) { ... }
-
                         // Submit Button
                         Button(action: {
                             guard let user = authVM.firebaseAuthUser else {
                                 reportVM.errorMessage = "You must be logged in to submit a report."
                                 return
                             }
-                            // Basic client-side validation
                             guard !reportVM.reportTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                                   !reportVM.reportDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                                 reportVM.errorMessage = "Title and description cannot be empty."
@@ -96,8 +74,9 @@ struct submitReportView: View {
                                     currentUserId: user.uid,
                                     currentUsername: user.displayName ?? "Anonymous"
                                 )
+                                // 2. MODIFIED LOGIC: Show alert on success
                                 if success {
-                                    dismiss()
+                                    showConfirmationAlert = true
                                 }
                             }
                         }) {
@@ -106,13 +85,12 @@ struct submitReportView: View {
                                 .fontWeight(.semibold)
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .background(reportVM.isLoading ? Color.gray : Color(red: 1.0, green: 0.627, blue: 0.004)) // Your orange button color
+                                .background(reportVM.isLoading ? Color.gray : Color(red: 1.0, green: 0.627, blue: 0.004))
                                 .cornerRadius(8)
                         }
                         .disabled(reportVM.isLoading)
-                        .padding(.top, 10) // Add space above the button
+                        .padding(.top, 10)
 
-                        // Display error message from ViewModel
                         if let errorMsg = reportVM.errorMessage, !errorMsg.isEmpty {
                             Text(errorMsg)
                                 .font(.callout)
@@ -121,42 +99,46 @@ struct submitReportView: View {
                                 .padding(.top, 5)
                         }
                     }
-                    .padding() // Inner padding for the white rounded box content
+                    .padding()
                     .background(.white)
                     .cornerRadius(16)
-                    .padding(.horizontal, 30) // Adjusted horizontal padding for the white box
-                    .padding(.vertical, 20)   // Adjusted vertical padding for the white box
+                    .padding(.horizontal, 30)
+                    .padding(.vertical, 20)
                     
-                    Spacer() // Pushes form content up if ScrollView is not full
+                    Spacer()
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity) // Allow VStack to expand
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .background( // Background for the ScrollView area (behind the white card)
+            .background(
                 Image("backgroundparking")
                     .resizable()
                     .overlay(Color.black.opacity(0.5))
                     .scaledToFill()
-                    .ignoresSafeArea(.container, edges: .all) // Let background extend
+                    .ignoresSafeArea(.container, edges: .all)
             )
-            .clipped() // Clip the ScrollView's content if background is applied here
+            .clipped()
 
-            BotAppBar() // Your custom BotAppBar
+            BotAppBar()
         }
-        // .background(...) // Background was moved to the ScrollView's content area
+        // 3. ADD THE ALERT MODIFIER HERE
+        .alert("Report Submitted", isPresented: $showConfirmationAlert) {
+            Button("OK", role: .cancel) {
+                // When the user taps "OK", dismiss the view
+                dismiss()
+            }
+        } message: {
+            Text("Thank you! Your report has been successfully submitted.")
+        }
         .navigationBarHidden(true)
         .onAppear {
-            reportVM.clearInputFields() // Clear fields and errors when view appears
-            // print("submitReportView appeared.") // Removed id and token
+            reportVM.clearInputFields()
         }
     }
 }
 
 // --- Preview ---
 #Preview {
-    // Ensure TopAppBar and BotAppBar are defined or provide dummies for preview
-    // struct TopAppBar: View { var body: some View { Text("Top App Bar").padding().background(Color.blue.opacity(0.3)) } }
-    // struct BotAppBar: View { var body: some View { Text("Bot App Bar").padding().background(Color.green.opacity(0.3)) } }
-
+    
     return NavigationStack {
         submitReportView()
             // Remove token and id from preview as they are no longer properties
