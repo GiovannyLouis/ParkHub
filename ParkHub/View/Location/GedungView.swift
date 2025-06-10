@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct GedungView: View {
-    @StateObject private var viewModel = GedungViewModel()
+    @EnvironmentObject var viewModel: LocationViewModel
 
     var body: some View {
         VStack(spacing: 0) {
@@ -17,12 +17,8 @@ struct GedungView: View {
             ZStack { // Main Content Box
                 Color.white // Background
 
-                if viewModel.isLoading {
+                if viewModel.gedungLocations.isEmpty {
                     ProgressView()
-                } else if let errorMessage = viewModel.errorMessage {
-                    Text("Error: \(errorMessage)")
-                        .foregroundColor(.red)
-                        .padding()
                 } else {
                     // Floor Display and Navigation Row
                     // Original Row had .fillMaxSize().padding(16.dp), horizontalArrangement = Center, verticalAlignment = CenterVertically
@@ -31,7 +27,7 @@ struct GedungView: View {
                     HStack(alignment: .center, spacing: 0) { // Main Row for Left, Center, Right
                         // --- Left Section ---
                         VStack(alignment: .trailing) { // Alignment matches Compose
-                            if viewModel.isCurrentFloorEven { // Even Floor Left
+                            if viewModel.isCurrentGedungFloorEven { // Even Floor Left
                                 ZStack {
                                     Image(systemName: "chevron.right.2")
                                         .resizable()
@@ -42,7 +38,7 @@ struct GedungView: View {
                                 .frame(width: 64, height: 40)
                                 .background(Color.gray.opacity(0.5))
                                 ForEach(viewModel.evenFloorLeftSectionSpots) { location in
-                                    HorizGedungView(color: viewModel.getGedungColor(isFilled: location.isFilled))
+                                    HorizGedungView(color: viewModel.getColor(for: location))
                                 }
                                 ZStack {
                                     Image(systemName: "chevron.left.2")
@@ -54,9 +50,9 @@ struct GedungView: View {
                                 .frame(width: 64, height: 40)
                                 .background(Color.gray.opacity(0.5))
                             } else { // Odd Floor Left
-                                VStack(alignment: .leading, spacing: 0) { // Explicit VStack for alignment
+                                VStack(alignment: .trailing, spacing: 0) { // Explicit VStack for alignment
                                     ForEach(viewModel.oddFloorLeftSectionSpots) { location in
-                                        HorizGedungView(color: viewModel.getGedungColor(isFilled: location.isFilled))
+                                        HorizGedungView(color: viewModel.getColor(for: location))
                                     }
                                 }
                             }
@@ -74,10 +70,10 @@ struct GedungView: View {
                                 .foregroundColor(.gray)
                                 .padding(.bottom, 10)
                                 .onTapGesture {
-                                    viewModel.incrementFloor()
+                                    viewModel.incrementGedungFloor()
                                 }
 
-                            Text("P\(viewModel.currentFloor)")
+                            Text("P\(viewModel.currentGedungFloor)")
                                 .font(.system(size: 48)) // Adjusted from 80sp
                                 .fontWeight(.medium) // .W500
                                 .frame(width: 100)
@@ -89,16 +85,16 @@ struct GedungView: View {
                                 .foregroundColor(.gray)
                                 .padding(.top, 10)
                                 .onTapGesture {
-                                    viewModel.decrementFloor()
+                                    viewModel.decrementGedungFloor()
                                 }
                         }
                         .padding(.horizontal, 64) // Adjusted from 48dp
 
                         // --- Right Section ---
                         VStack(alignment: .leading) { // Default leading alignment for VStacks
-                            if viewModel.isCurrentFloorEven { // Even Floor Right
+                            if viewModel.isCurrentGedungFloorEven { // Even Floor Right
                                 ForEach(viewModel.evenFloorRightSectionSpotsTop) { location in
-                                    HorizGedungView(color: viewModel.getGedungColor(isFilled: location.isFilled))
+                                    HorizGedungView(color: viewModel.getColor(for: location))
                                 }
                                 ZStack { // Station Icon Box
                                     Image(systemName: "figure.walk.motion") // baseline_transfer_within_a_station_24
@@ -111,7 +107,7 @@ struct GedungView: View {
                                 .background(Color.cyan) // Color.Cyan
 
                                 ForEach(viewModel.evenFloorRightSectionSpotsBottom) { location in
-                                    HorizGedungView(color: viewModel.getGedungColor(isFilled: location.isFilled))
+                                    HorizGedungView(color: viewModel.getColor(for: location))
                                 }
                             } else { // Odd Floor Right
                                 ZStack {
@@ -124,7 +120,7 @@ struct GedungView: View {
                                 .frame(width: 64, height: 40)
                                 .background(Color.gray.opacity(0.5))
                                 ForEach(viewModel.oddFloorRightSectionSpots) { location in
-                                    HorizGedungView(color: viewModel.getGedungColor(isFilled: location.isFilled))
+                                    HorizGedungView(color: viewModel.getColor(for: location))
                                 }
                                 ZStack {
                                     Image(systemName: "chevron.left.2")
@@ -172,4 +168,5 @@ struct HorizGedungView: View {
 
 #Preview {
     GedungView()
+        .environmentObject(LocationViewModel())
 }

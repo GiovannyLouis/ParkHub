@@ -11,131 +11,99 @@ struct AlertInfo: Identifiable {
 
 struct AdminManageLessonView: View {
     @EnvironmentObject var authVM: AuthViewModel
-    @StateObject var viewModel = AdminLessonViewModel()
-
+    @EnvironmentObject var viewModel: AdminLessonViewModel
     @Environment(\.dismiss) var dismiss
-
 
     let token: String
     var onLogout: () -> Void
 
-    @State private var showCreateLessonView = false
+    @State private var showCreateLessonSheet = false
     @State private var lessonIdToUpdate: String? = nil
     @State private var alertInfo: AlertInfo?
 
     var body: some View {
-        VStack(spacing: 0) {
-            TopAppBar()
+        // Wrap in NavigationStack to use .navigationDestination
+        NavigationStack {
+            VStack(spacing: 0) {
+                TopAppBar()
 
-            ZStack(alignment: .bottomTrailing) {
-                VStack(alignment: .leading, spacing: 0) {
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 17, weight: .semibold))
-                            Text("Back")
-                                .font(.system(size: 17))
-                        }
-                        .foregroundColor(primaryOrange)
-                    }
-                    .padding([.leading, .top])
-                    .padding(.bottom, 10)
-
-                    if viewModel.isLoading && viewModel.lessons.isEmpty {
-                        Spacer()
-                        ProgressView("Loading lessons...")
-                            .progressViewStyle(CircularProgressViewStyle(tint: primaryOrange))
-                            .scaleEffect(1.5)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                        Spacer()
-                    } else if let error = viewModel.errorMessage, viewModel.lessons.isEmpty {
-                        Spacer()
-                        Text(error)
-                            .foregroundColor(.red)
-                            .multilineTextAlignment(.center)
-                            .padding()
-                            .frame(maxWidth: .infinity, alignment: .center)
-                        Spacer()
-                    } else if viewModel.lessons.isEmpty {
-                        Spacer()
-                        Text("No lessons available. Tap '+' to create one.")
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.center)
-                            .padding()
-                            .frame(maxWidth: .infinity, alignment: .center)
-                        Spacer()
-                    } else {
-                        List {
-                            ForEach(viewModel.lessons) { lesson in
-                                AdminLessonCard(
-                                    lesson: lesson,
-                                    onUpdate: {
-                                        lessonIdToUpdate = lesson.id
-                                    },
-                                    onDelete: {
-                                        viewModel.deleteLesson(
-                                            lessonId: lesson.id,
-                                            onSuccess: {
-                                                alertInfo = AlertInfo(message: "Lesson deleted successfully!", isError: false)
-                                                viewModel.fetchAllLessons()
-                                            },
-                                            onError: { errorMessage in
-                                                alertInfo = AlertInfo(message: errorMessage, isError: true)
-                                            }
-                                        )
-                                    }
-                                )
-                                .listRowSeparator(.hidden)
-                                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                ZStack(alignment: .bottomTrailing) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Button(action: {
+                            dismiss()
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 17, weight: .semibold))
+                                Text("Back")
+                                    .font(.system(size: 17))
                             }
+                            .foregroundColor(.orange) // Assuming primaryOrange
                         }
-                        .listStyle(PlainListStyle())
-                        .refreshable {
-                            viewModel.fetchAllLessons()
-                        }
+                        .padding([.leading, .top])
+                        .padding(.bottom, 10)
+
+                        // Main Content
+                        contentView
                     }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(UIColor.systemGroupedBackground))
-                .onAppear {
-                    viewModel.fetchAllLessons()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(UIColor.systemGroupedBackground))
+                    .onAppear {
+                        viewModel.fetchAllLessons()
+                    }
+
+                    // Floating Action Button
+                    Button(action: {
+                        showCreateLessonSheet = true
+                    }) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 24, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(Color.orange) // Assuming primaryOrange
+                            .clipShape(Circle())
+                            .shadow(radius: 5)
+                    }
+                    .padding()
                 }
 
-                Button(action: {
-                    showCreateLessonView = true
-                }) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 24, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding()
-                        .background(primaryOrange)
-                        .clipShape(Circle())
-                        .shadow(radius: 5)
+                BotAppBar()
+            }
+            .navigationBarHidden(true)
+            .alert(item: $alertInfo) { info in
+                Alert(
+                    title: Text(info.isError ? "Error" : "Success"),
+                    message: Text(info.message),
+                    dismissButton: .default(Text("OK"))
+                )
+            }
+            // MODIFICATION 1: Use .sheet for creating lessons
+            .sheet(isPresented: $showCreateLessonSheet) {
+                AdminCreateLessonView(
+                    token: token,
+                    onLessonCreated: {
+                        showCreateLessonSheet = false
+                        alertInfo = AlertInfo(message: "Lesson created successfully!", isError: false)
+                        viewModel.fetchAllLessons()
+                    },
+                    onShowError: { errorMessage in
+                        alertInfo = AlertInfo(message: errorMessage, isError: true)
+                    }
+                )
+                .environmentObject(authVM)
+                .environmentObject(viewModel)
+            }
+            // MODIFICATION 2: Use .navigationDestination for updating lessons
+            .navigationDestination(isPresented: Binding<Bool>(
+                get: { lessonIdToUpdate != nil },
+                set: { isActive in
+                    if !isActive { lessonIdToUpdate = nil }
                 }
-                .padding()
-
-                NavigationLink(
-                    destination: AdminCreateLessonView(
-                        token: token,
-                        onLessonCreated: {
-                            showCreateLessonView = false
-                            alertInfo = AlertInfo(message: "Lesson created successfully!", isError: false)
-                            viewModel.fetchAllLessons()
-                        },
-                        onShowError: { errorMessage in
-                            alertInfo = AlertInfo(message: errorMessage, isError: true)
-                        }
-                    )
-                    .environmentObject(authVM)
-                    .environmentObject(viewModel),
-                    isActive: $showCreateLessonView
-                ) { EmptyView() }
-
-                NavigationLink(
-                    destination: AdminUpdateLessonView(
-                        lessonId: lessonIdToUpdate ?? "",
+            )) {
+                // This destination is only built when lessonIdToUpdate is NOT nil
+                if let lessonId = lessonIdToUpdate {
+                    AdminUpdateLessonView(
+                        lessonId: lessonId,
                         onLessonUpdated: {
                             lessonIdToUpdate = nil
                             alertInfo = AlertInfo(message: "Lesson updated successfully!", isError: false)
@@ -146,25 +114,66 @@ struct AdminManageLessonView: View {
                         }
                     )
                     .environmentObject(authVM)
-                    .environmentObject(viewModel),
-                    isActive: Binding<Bool>(
-                        get: { lessonIdToUpdate != nil },
-                        set: { isActive in
-                            if !isActive { lessonIdToUpdate = nil }
+                    .environmentObject(viewModel)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var contentView: some View {
+        if viewModel.isLoading && viewModel.lessons.isEmpty {
+            Spacer()
+            ProgressView("Loading lessons...")
+                .progressViewStyle(CircularProgressViewStyle(tint: .orange)) // Assuming primaryOrange
+                .scaleEffect(1.5)
+                .frame(maxWidth: .infinity, alignment: .center)
+            Spacer()
+        } else if let error = viewModel.errorMessage, viewModel.lessons.isEmpty {
+            Spacer()
+            Text(error)
+                .foregroundColor(.red)
+                .multilineTextAlignment(.center)
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .center)
+            Spacer()
+        } else if viewModel.lessons.isEmpty {
+            Spacer()
+            Text("No lessons available. Tap '+' to create one.")
+                .foregroundColor(.gray)
+                .multilineTextAlignment(.center)
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .center)
+            Spacer()
+        } else {
+            List {
+                ForEach(viewModel.lessons) { lesson in
+                    AdminLessonCard(
+                        lesson: lesson,
+                        onUpdate: {
+                            lessonIdToUpdate = lesson.id
+                        },
+                        onDelete: {
+                            viewModel.deleteLesson(
+                                lessonId: lesson.id,
+                                onSuccess: {
+                                    alertInfo = AlertInfo(message: "Lesson deleted successfully!", isError: false)
+                                    // The viewmodel listener will handle the UI update automatically
+                                },
+                                onError: { errorMessage in
+                                    alertInfo = AlertInfo(message: errorMessage, isError: true)
+                                }
+                            )
                         }
                     )
-                ) { EmptyView() }
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                }
             }
-
-            BotAppBar()
-        }
-        .navigationBarHidden(true)
-        .alert(item: $alertInfo) { info in
-            Alert(
-                title: Text(info.isError ? "Error" : "Success"),
-                message: Text(info.message),
-                dismissButton: .default(Text("OK"))
-            )
+            .listStyle(PlainListStyle())
+            .refreshable {
+                viewModel.fetchAllLessons()
+            }
         }
     }
 }

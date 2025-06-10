@@ -1,10 +1,4 @@
-//
-//  AdminLessonRepository.swift
-//  ParkHub
-//
-//  Created by Axel Valerio Ertamto on 04/06/25.
-//
-
+// File: AdminLessonRepository.swift
 
 import FirebaseDatabase
 import FirebaseAuth
@@ -76,8 +70,7 @@ class AdminLessonRepository {
     
     func fetchLessonDetails(lessonId: String) async -> Result<Lesson, Error> {
             do {
-                // Using Firebase's async/await API (requires Firebase SDK version that supports it, e.g., Firebase 9+ for Swift)
-                let snapshot = try await ref.child(lessonId).getData() // .getData() is async
+                let snapshot = try await ref.child(lessonId).getData()
 
                 guard snapshot.exists(),
                       let dict = snapshot.value as? [String: Any] else {
@@ -93,20 +86,15 @@ class AdminLessonRepository {
                 )
                 return .success(lesson)
             } catch {
-                return .failure(error) // Propagate the error from Firebase
+                return .failure(error)
             }
         }
     
     
-    // MARK: - Update lesson
-    func updateLesson(_ lesson: Lesson, completion: @escaping (Result<Void, Error>) -> Void) {
-        guard let jsonData = try? JSONEncoder().encode(lesson),
-              let json = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else {
-            completion(.failure(NSError(domain: "EncodingError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to encode lesson"])))
-            return
-        }
-        
-        ref.child(lesson.id).setValue(json) { error, _ in
+    // MARK: - Update lesson (MODIFIED)
+    /// Performs a partial update on a lesson. Only the keys provided in the `data` dictionary will be updated.
+    func updateLesson(lessonId: String, data: [String: Any], completion: @escaping (Result<Void, Error>) -> Void) {
+        ref.child(lessonId).updateChildValues(data) { error, _ in
             if let error = error {
                 completion(.failure(error))
             } else {

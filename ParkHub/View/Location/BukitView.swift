@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct BukitView: View {
-    @StateObject private var viewModel = BukitViewModel()
+    @EnvironmentObject var viewModel: LocationViewModel
     // In a real app, this viewModel might be passed in or be an @EnvironmentObject
 
     var body: some View {
@@ -21,7 +21,8 @@ struct BukitView: View {
             ZStack {
                 Color.white // Background for the content area
                 
-                if viewModel.locations.isEmpty {
+                if viewModel.bukitLocations.isEmpty {
+                    Text("Total : \(viewModel.bukitLocations.count)")
                     // Corresponds to initial loading or if data fetch fails to populate
                     ProgressView() // SwiftUI's equivalent to CircularProgressIndicator
                 } else {
@@ -152,4 +153,5 @@ struct HorizBukitView: View {
 
 #Preview {
     BukitView()
+        .environmentObject(LocationViewModel())
 }

@@ -2,7 +2,9 @@ import SwiftUI
 
 struct MainPageView: View {
     @EnvironmentObject var authVM: AuthViewModel
-    @EnvironmentObject var reportVM: ReportViewModel
+    @EnvironmentObject var reportVM: ReportViewModel // For submitting reports
+
+    @EnvironmentObject var locationVM: LocationViewModel
     
     @EnvironmentObject var adminLessonVM: AdminLessonViewModel
     
@@ -383,6 +385,8 @@ struct AuthSheetContainerView: View {
 #Preview {
     MainPageView()
         .environmentObject(AuthViewModel())
+        .environmentObject(ReportViewModel()) // Add ReportViewModel for preview
+        .environmentObject(LocationViewModel())
         .environmentObject(ReportViewModel())
         .environmentObject(AdminLessonViewModel())
 }
