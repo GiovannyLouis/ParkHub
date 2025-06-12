@@ -11,26 +11,49 @@ import XCTest
 final class AdminLessonViewModelTests: XCTestCase {
 
     class MockAdminLessonRepository: AdminLessonRepository {
-        var shouldReturnError = false
+            var shouldReturnError = false
+            // Add flags to verify if methods were called
+            var updateLessonCalled = false
+            var deleteLessonCalled = false
 
-        override func fetchAllLessons(completion: @escaping (Result<[Lesson], Error>) -> Void) {
-            if shouldReturnError {
-                completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock error"])))
-            } else {
-                completion(.success([
-                    Lesson(id: "1", title: "Sample", desc: "Sample Desc", content: "Sample Content", userId: nil)
-                ]))
+            override func fetchAllLessons(completion: @escaping (Result<[Lesson], Error>) -> Void) {
+                if shouldReturnError {
+                    completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock error"])))
+                } else {
+                    completion(.success([
+                        Lesson(id: "1", title: "Sample", desc: "Sample Desc", content: "Sample Content", userId: nil)
+                    ]))
+                }
+            }
+
+            override func saveNewLesson(_ lesson: Lesson, completion: @escaping (Result<Void, Error>) -> Void) {
+                if shouldReturnError {
+                    completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock save error"])))
+                } else {
+                    completion(.success(()))
+                }
+            }
+
+            // MARK: - Mock for Update
+            override func updateLesson(lessonId: String, data: [String: Any], completion: @escaping (Result<Void, Error>) -> Void) {
+                updateLessonCalled = true // Indicate that this method was called
+                if shouldReturnError {
+                    completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock update error"])))
+                } else {
+                    completion(.success(()))
+                }
+            }
+
+            // MARK: - Mock for Delete
+            override func deleteLesson(lessonId: String, completion: @escaping (Result<Void, Error>) -> Void) {
+                deleteLessonCalled = true // Indicate that this method was called
+                if shouldReturnError {
+                    completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock delete error"])))
+                } else {
+                    completion(.success(()))
+                }
             }
         }
-
-        override func saveNewLesson(_ lesson: Lesson, completion: @escaping (Result<Void, Error>) -> Void) {
-            if shouldReturnError {
-                completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock save error"])))
-            } else {
-                completion(.success(()))
-            }
-        }
-    }
 
     func testFetchAllLessonsSuccess() {
         let mockRepo = MockAdminLessonRepository()
@@ -86,6 +109,116 @@ final class AdminLessonViewModelTests: XCTestCase {
 
         wait(for: [expectation], timeout: 1.0)
     }
+    
+    func testUpdateExistingLessonSuccess() {
+            let mockRepo = MockAdminLessonRepository()
+            let viewModel = AdminLessonViewModel(repository: mockRepo)
+
+            let expectation = XCTestExpectation(description: "Update lesson success")
+            viewModel.updateExistingLesson(lessonId: "test-id", title: "New Title", desc: "New Desc", content: "New Content") {
+                // onSuccess callback
+                DispatchQueue.main.async { // Ensure assertions are on the main thread
+                    XCTAssertTrue(viewModel.updateSuccess)
+                    XCTAssertNil(viewModel.updateError)
+                    expectation.fulfill()
+                }
+            } onError: { errorMessage in
+                // This should not be called in a success scenario
+                XCTFail("Update failed unexpectedly with error: \(errorMessage)")
+                expectation.fulfill()
+            }
+
+            wait(for: [expectation], timeout: 1.0)
+            XCTAssertTrue(mockRepo.updateLessonCalled) // Verify mock method was hit
+        }
+
+        func testUpdateExistingLessonFailure() {
+            let mockRepo = MockAdminLessonRepository()
+            mockRepo.shouldReturnError = true // Simulate an error from the repository
+            let viewModel = AdminLessonViewModel(repository: mockRepo)
+
+            let expectation = XCTestExpectation(description: "Update lesson failure")
+            viewModel.updateExistingLesson(lessonId: "test-id", title: "Title", desc: "Desc", content: "Content") {
+                // This should not be called in a failure scenario
+                XCTFail("Update succeeded unexpectedly")
+                expectation.fulfill()
+            } onError: { errorMessage in
+                // onError callback
+                DispatchQueue.main.async { // Ensure assertions are on the main thread
+                    XCTAssertFalse(viewModel.updateSuccess)
+                    XCTAssertNotNil(viewModel.updateError)
+                    XCTAssertEqual(viewModel.updateError, "Failed to update lesson: Mock update error")
+                    expectation.fulfill()
+                }
+            }
+
+            wait(for: [expectation], timeout: 1.0)
+            XCTAssertTrue(mockRepo.updateLessonCalled) // Verify mock method was hit
+        }
+        
+        func testUpdateExistingLessonValidationFails_EmptyFields() {
+            let mockRepo = MockAdminLessonRepository()
+            let viewModel = AdminLessonViewModel(repository: mockRepo)
+
+            let expectation = XCTestExpectation(description: "Update lesson validation failure - empty fields")
+            viewModel.updateExistingLesson(lessonId: "test-id", title: "", desc: "", content: "") {
+                XCTFail("Update should have failed validation but succeeded")
+                expectation.fulfill()
+            } onError: { errorMessage in
+                DispatchQueue.main.async {
+                    XCTAssertFalse(viewModel.updateSuccess)
+                    XCTAssertNotNil(viewModel.updateError)
+                    XCTAssertEqual(viewModel.updateError, "At least one field must have content to update.")
+                    expectation.fulfill()
+                }
+            }
+            wait(for: [expectation], timeout: 1.0)
+            XCTAssertFalse(mockRepo.updateLessonCalled) // Repository method should NOT be invoked if validation fails
+        }
+
+        // MARK: - Delete Lesson Tests
+        func testDeleteLessonSuccess() {
+            let mockRepo = MockAdminLessonRepository()
+            let viewModel = AdminLessonViewModel(repository: mockRepo)
+
+            let expectation = XCTestExpectation(description: "Delete lesson success")
+            viewModel.deleteLesson(lessonId: "test-id") {
+                // onSuccess callback
+                DispatchQueue.main.async { // Ensure assertions are on the main thread
+                    // No specific @Published properties for success after delete, so just fulfill
+                    expectation.fulfill()
+                }
+            } onError: { errorMessage in
+                // This should not be called in a success scenario
+                XCTFail("Delete failed unexpectedly with error: \(errorMessage)")
+                expectation.fulfill()
+            }
+
+            wait(for: [expectation], timeout: 1.0)
+            XCTAssertTrue(mockRepo.deleteLessonCalled) // Verify mock method was hit
+        }
+
+        func testDeleteLessonFailure() {
+            let mockRepo = MockAdminLessonRepository()
+            mockRepo.shouldReturnError = true // Simulate an error from the repository
+            let viewModel = AdminLessonViewModel(repository: mockRepo)
+
+            let expectation = XCTestExpectation(description: "Delete lesson failure")
+            viewModel.deleteLesson(lessonId: "test-id") {
+                // This should not be called in a failure scenario
+                XCTFail("Delete succeeded unexpectedly")
+                expectation.fulfill()
+            } onError: { errorMessage in
+                // onError callback
+                DispatchQueue.main.async { // Ensure assertions are on the main thread
+                    XCTAssertEqual(errorMessage, "Failed to delete lesson: Mock delete error")
+                    expectation.fulfill()
+                }
+            }
+
+            wait(for: [expectation], timeout: 1.0)
+            XCTAssertTrue(mockRepo.deleteLessonCalled) // Verify mock method was hit
+        }
 }
 
 final class LessonViewModelTests: XCTestCase {
